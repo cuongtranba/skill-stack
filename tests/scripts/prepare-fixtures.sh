@@ -34,12 +34,26 @@ ERRORS=0
 for yaml_file in "$GENERATED_DIR"/*.yaml; do
     if [ -f "$yaml_file" ]; then
         filename=$(basename "$yaml_file")
-        # Basic YAML validation
-        if python3 -c "import yaml; yaml.safe_load(open('$yaml_file'))" 2>/dev/null; then
-            echo "  ✓ $filename"
+
+        # Try Python yaml module first, fallback to basic checks
+        if command -v python3 &>/dev/null && python3 -c "import yaml" 2>/dev/null; then
+            if python3 -c "import yaml; yaml.safe_load(open('$yaml_file'))" 2>/dev/null; then
+                echo "  ✓ $filename"
+            else
+                echo "  ✗ $filename (invalid YAML)"
+                ERRORS=$((ERRORS + 1))
+            fi
         else
-            echo "  ✗ $filename (invalid YAML)"
-            ERRORS=$((ERRORS + 1))
+            # Fallback: basic structure check (name and steps fields exist)
+            has_name=$(grep -c "^name:" "$yaml_file" 2>/dev/null || echo "0")
+            has_steps=$(grep -c "^steps:" "$yaml_file" 2>/dev/null || echo "0")
+
+            if [ "$has_name" -gt 0 ] && [ "$has_steps" -gt 0 ]; then
+                echo "  ✓ $filename (basic check)"
+            else
+                echo "  ✗ $filename (missing required fields)"
+                ERRORS=$((ERRORS + 1))
+            fi
         fi
     fi
 done

@@ -7,7 +7,9 @@ description: Use when creating or editing skill workflow stacks - guides through
 
 ## Overview
 
-Guide users through creating skill workflow stacks via Socratic questioning. One question at a time, prefer multiple choice.
+Guide users through creating skill workflow stacks via Socratic questioning.
+
+**REQUIREMENT:** Use `AskUserQuestion` tool for ALL questions. Never output plain text questions.
 
 **Announce:** "I'm using the stack-build skill to help you create a workflow."
 
@@ -41,96 +43,68 @@ Store discovery results for reference during building.
 
 ## Socratic Flow
 
-**Ask ONE question at a time. Use AskUserQuestion tool with multiple choice options.**
+**CRITICAL: You MUST use the `AskUserQuestion` tool for EVERY question. NEVER output plain text questions.**
+
+```
+❌ WRONG - Plain text:
+"What's your primary role?
+- Fullstack developer
+- Backend developer"
+
+✅ CORRECT - Use AskUserQuestion tool:
+AskUserQuestion(questions=[{
+  question: "What's your primary role?",
+  header: "Role",
+  options: [
+    {label: "Fullstack developer", description: "Full-stack web development"},
+    {label: "Backend developer", description: "APIs, services, data"},
+    {label: "Frontend developer", description: "UI/UX implementation"},
+    {label: "DevOps/SRE", description: "Infrastructure, deployment"}
+  ],
+  multiSelect: false
+}])
+```
 
 ### Phase 1: Context Gathering
 
-```
-Question 1: "What's your primary role?"
-Options:
-- Fullstack developer
-- Backend developer
-- Frontend developer
-- DevOps/SRE
-- Project Manager
-- Other (describe)
+**Use AskUserQuestion with these questions (one at a time):**
 
-Question 2: "What kind of task is this stack for?"
-Options:
-- New feature development
-- Bug fixing
-- Code review
-- Deployment
-- Planning/Documentation
-- Other (describe)
-```
+| Question | Header | Options |
+|----------|--------|---------|
+| "What's your primary role?" | Role | Fullstack, Backend, Frontend, DevOps/SRE |
+| "What kind of task is this stack for?" | Task type | New feature, Bug fix, Code review, Deployment, Planning |
 
 ### Phase 2: Pain Point Discovery
 
-```
-Question 3: "What slows you down in your current workflow?"
-Options:
-- Forgetting steps
-- Manual repetition
-- Context switching
-- Quality issues
-- Other (describe)
-
-Question 4: "Which steps do you sometimes skip?"
-(Open-ended, or suggest based on role)
-```
+| Question | Header | Options |
+|----------|--------|---------|
+| "What slows you down in your current workflow?" | Pain points | Forgetting steps, Manual repetition, Context switching, Quality issues |
+| "Which steps do you sometimes skip?" | Skipped steps | (multiSelect: true, derive from role) |
 
 ### Phase 3: Workflow Building
 
-```
-Question 5: "For [task type], what do you do first?"
-Options: [Based on discovered skills]
-
-Question 6: "After [previous step], what comes next?"
-Options: [Filtered by context]
-
-Question 7: "Should any steps run in parallel?"
-Options:
-- Yes, show me how
-- No, keep it sequential
-
-Question 8: "Should this loop until something passes?"
-Options:
-- Yes (e.g., test-fix cycle)
-- No
-```
+| Question | Header | Options |
+|----------|--------|---------|
+| "For [task type], what do you do first?" | First step | (derive from discovered skills) |
+| "After [previous step], what comes next?" | Next step | (filter by context) |
+| "Should any steps run in parallel?" | Parallel | Yes - show me how, No - keep sequential |
+| "Should this loop until something passes?" | Looping | Yes (test-fix cycle), No |
 
 ### Phase 4: Refinement
 
-```
-Question 9: "Here's your stack so far:
-[Show current steps]
+Show current steps first, then ask:
 
-What would you like to do?"
-Options:
-- Add another step
-- Remove a step
-- Reorder steps
-- Looks good, continue
-
-Question 10: "How should transitions work?"
-Options:
-- Ask before each step (prompt)
-- Run automatically (auto)
-- Mix (I'll specify per step)
-```
+| Question | Header | Options |
+|----------|--------|---------|
+| "What would you like to do?" | Refine | Add step, Remove step, Reorder, Looks good |
+| "How should transitions work?" | Transitions | Ask before each (prompt), Run automatically (auto), Mix |
 
 ### Phase 5: Finalization
 
-```
-Question 11: "Save as personal or project stack?"
-Options:
-- Personal (~/.claude/stacks/) - available everywhere
-- Project (.claude/stacks/) - shared with team
-
-Question 12: "What should we name this stack?"
-(Suggest based on task type)
-```
+| Question | Header | Options |
+|----------|--------|---------|
+| "Save as personal or project stack?" | Location | Personal (~/.claude/stacks/), Project (.claude/stacks/) |
+| "What should we name this stack?" | Name | (suggest 2-3 names based on task type) |
 
 ## YAML Generation
 
@@ -143,8 +117,7 @@ _meta:
   created_at: [ISO timestamp]
   modified_at: [ISO timestamp]
   checksum: [generate after content]
-  diagram: |
-    [Generate Mermaid flowchart]
+  diagram: ./[name].diagram.md
 
 name: [user-provided-name]
 description: [generated from context]
@@ -164,23 +137,25 @@ steps:
 
 ## Mermaid Diagram Generation
 
-**Generate flowchart after building steps:**
+**Save diagram as separate file: `[name].diagram.md`**
 
-```
+```markdown
+# [Stack Name] Workflow
+
+```mermaid
 flowchart TD
-  classDef skill fill:#e1f5fe,stroke:#01579b
-  classDef bash fill:#f3e5f5,stroke:#4a148c
-  classDef command fill:#e8f5e9,stroke:#1b5e20
-
   [Generate nodes for each step]
   [Generate subgraphs for parallel/loop]
   [Generate edges with labels]
+`` `
 ```
 
 **Node format by type:**
-- skill: `name[name\n skill:ref]:::skill`
-- bash: `name[name\n cmd]:::bash`
-- command: `name[name\n /cmd]:::command`
+- skill: `name[name\nskill:ref]`
+- bash: `name[name\ncmd]`
+- command: `name[name\n/cmd]`
+- parallel: `subgraph name [Parallel] ... end`
+- loop: `name[name]` with self-referencing edge
 
 ## Checksum Generation
 
@@ -194,23 +169,30 @@ After generating YAML content (excluding `_meta.checksum`):
 # Create directory if needed
 mkdir -p ~/.claude/stacks  # or .claude/stacks
 
-# Write file
+# Write YAML file
 cat > [path]/[name].yaml << 'EOF'
 [Generated YAML]
+EOF
+
+# Write diagram file
+cat > [path]/[name].diagram.md << 'EOF'
+[Generated Mermaid markdown]
 EOF
 ```
 
 **Confirm to user:**
 ```
 Stack '[name]' saved to [path]
+  - [name].yaml (workflow definition)
+  - [name].diagram.md (visual flowchart)
 
 You can run it anytime with:
   /stack [name]
 
 Or I'll suggest it when you're working on matching tasks.
-
-[Show generated Mermaid diagram]
 ```
+
+**Then display the diagram inline for preview.**
 
 ## Edit Mode
 
@@ -234,8 +216,8 @@ When editing an existing stack:
    - Reorder steps
    - Change step settings
    - Change defaults
-4. After changes, regenerate checksum and diagram
-5. Save and confirm
+4. After changes, regenerate checksum and diagram file
+5. Save both .yaml and .diagram.md files
 
 ## Validation Before Save
 
@@ -246,9 +228,22 @@ Always invoke stack-validate skill before saving:
 
 ## Guidelines
 
-- ONE question at a time
+- ONE question at a time via `AskUserQuestion` tool
 - Prefer multiple choice (easier to answer)
 - Show progress ("Step 3 of 5...")
 - Allow going back
 - Validate before saving
-- Always generate Mermaid diagram
+- Always generate Mermaid diagram as separate .diagram.md file
+
+## Red Flags - STOP
+
+If you catch yourself doing any of these, STOP and use `AskUserQuestion`:
+
+| Wrong | Right |
+|-------|-------|
+| Writing "Question 1:" as text | Use AskUserQuestion tool |
+| Listing options with bullet points | Use options array in tool |
+| Asking "Which do you prefer?" in prose | Use tool with header + options |
+| Batching multiple questions at once | One question per tool call |
+
+**Plain text questions = skill violation. Always use the tool.**

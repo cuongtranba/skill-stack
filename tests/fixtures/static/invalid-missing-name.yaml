@@ -1,0 +1,13 @@
+# Invalid: Missing 'name' field
+_meta:
+  version: 1.0
+  checksum: sha256:test
+
+# ERROR: 'name' field is required but missing
+description: Stack without name
+scope: personal
+
+steps:
+  - name: step-one
+    type: bash
+    run: echo "test"

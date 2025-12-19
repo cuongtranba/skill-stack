@@ -1,0 +1,17 @@
+# Invalid: Loop without exit condition
+_meta:
+  version: 1.0
+  checksum: sha256:test
+
+name: infinite-loop-stack
+description: Stack with loop that has no exit condition
+scope: personal
+
+steps:
+  - loop:
+      name: bad-loop
+      # ERROR: No exit condition (until, while, times, or for_each)
+      steps:
+        - name: forever
+          type: bash
+          run: echo "infinite"

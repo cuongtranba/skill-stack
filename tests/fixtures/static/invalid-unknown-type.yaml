@@ -1,0 +1,13 @@
+# Invalid: Unknown step type
+_meta:
+  version: 1.0
+  checksum: sha256:test
+
+name: bad-type-stack
+description: Stack with unknown step type
+scope: personal
+
+steps:
+  - name: bad-step
+    type: unknown_type  # ERROR: 'unknown_type' is not a valid step type
+    ref: something

@@ -1,0 +1,10 @@
+# Invalid: Missing 'steps' field
+_meta:
+  version: 1.0
+  checksum: sha256:test
+
+name: no-steps-stack
+description: Stack without steps array
+scope: personal
+
+# ERROR: 'steps' field is required but missing

@@ -1,0 +1,17 @@
+# Generated test fixtures (regenerated from discovery)
+tests/fixtures/generated/
+tests/fixtures/discovered-resources.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Logs
+*.log

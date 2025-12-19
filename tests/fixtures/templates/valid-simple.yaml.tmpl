@@ -1,0 +1,35 @@
+# Template: Simple Sequential Stack
+# Placeholders: {{SKILL_1}}, {{SKILL_2}}, {{COMMAND_1}}
+
+_meta:
+  version: 1.0
+  created_by: test-generator
+  created_at: {{GENERATED_AT}}
+  modified_at: {{GENERATED_AT}}
+  checksum: {{CHECKSUM}}
+
+name: test-simple
+description: Simple sequential stack using discovered resources
+scope: personal
+
+defaults:
+  on_error: ask
+  transition: prompt
+
+steps:
+  - name: first-skill
+    type: skill
+    ref: {{SKILL_1}}
+    transition: prompt
+    description: First step using discovered skill
+
+  - name: bash-step
+    type: bash
+    run: echo "Running test step"
+    transition: auto
+
+  - name: second-skill
+    type: skill
+    ref: {{SKILL_2}}
+    transition: prompt
+    description: Second step using discovered skill

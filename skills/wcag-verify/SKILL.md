@@ -224,3 +224,80 @@ font-size: 0.875rem;
 /* PASS: Flexible */
 .container { max-width: 1200px; width: 100%; }
 ```
+
+## Color Contrast Analysis
+
+### Finding Colors in Code
+
+Look for color definitions in:
+
+**1. Inline styles (JSX/HTML)**
+```jsx
+<div style={{ color: '#333', backgroundColor: 'var(--bg-primary)' }}>
+<p style="color: rgb(100, 100, 100)">
+```
+
+**2. Tailwind classes**
+```jsx
+<p className="text-gray-600 bg-white">
+<button className="bg-blue-500 hover:bg-blue-400 text-white">
+```
+
+**3. CSS classes**
+```jsx
+<span className="error-message">
+<div className="card-header">
+```
+
+### Tracing to Source Values
+
+Resolve colors through the chain:
+
+**Tailwind → Config:**
+```
+text-gray-600 → tailwind.config.js → colors.gray[600] → #4B5563
+bg-blue-500 → tailwind.config.js → colors.blue[500] → #3B82F6
+```
+
+**CSS Variables → Definition:**
+```
+var(--bg-primary) → :root { --bg-primary: #FAFAFA }
+var(--text-muted) → :root { --text-muted: var(--gray-500) } → #6B7280
+```
+
+**SCSS Variables → Definition:**
+```
+$error-red → _variables.scss → $error-red: #DC2626
+color: $text-secondary → $text-secondary: #64748B
+```
+
+**Design Tokens → Source:**
+```
+--color-primary → tokens.json → { "color": { "primary": { "value": "#3B82F6" } } }
+```
+
+### Contrast Ratio Computation
+
+Use WCAG 2.1 relative luminance formula:
+
+```
+Relative luminance L = 0.2126 * R + 0.7152 * G + 0.0722 * B
+(where R, G, B are linearized: value <= 0.03928 ? value/12.92 : ((value+0.055)/1.055)^2.4)
+
+Contrast ratio = (L1 + 0.05) / (L2 + 0.05)
+(where L1 is lighter, L2 is darker)
+```
+
+**Requirements:**
+- Normal text (< 18pt or < 14pt bold): 4.5:1 minimum
+- Large text (≥ 18pt or ≥ 14pt bold): 3:1 minimum
+- UI components & graphics: 3:1 minimum
+
+### Common Tailwind Color Contrast Reference
+
+| Text Class | On White | On Gray-100 | On Gray-900 |
+|------------|----------|-------------|-------------|
+| gray-400 (#9CA3AF) | 2.68:1 ✗ | 2.45:1 ✗ | 5.48:1 ✓ |
+| gray-500 (#6B7280) | 4.54:1 ✓ | 4.15:1 ✗ | 3.23:1 ✗ |
+| gray-600 (#4B5563) | 7.08:1 ✓ | 6.47:1 ✓ | 2.07:1 ✗ |
+| gray-700 (#374151) | 10.31:1 ✓ | 9.43:1 ✓ | 1.42:1 ✗ |

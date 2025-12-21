@@ -123,3 +123,57 @@ Read each file and check for these WCAG violations:
   <span className="sr-only">Search</span>
 </button>
 ```
+
+### MAJOR - Significant barriers
+
+**1.4.3 Contrast Minimum (Level AA)**
+- Text contrast ratio < 4.5:1 for normal text
+- Text contrast ratio < 3:1 for large text (18pt+ or 14pt bold)
+- See "Color Contrast Analysis" section for full details
+
+**1.4.11 Non-text Contrast (Level AA)**
+- UI component boundaries < 3:1 against background
+- Focus indicators < 3:1 against background
+- Graphical elements conveying information < 3:1
+
+**2.4.4 Link Purpose (Level A)**
+- Links with generic text: "click here", "read more", "learn more", "here"
+- Multiple links with same text but different destinations
+- Links that don't describe destination
+
+```jsx
+// FAIL: Generic text
+<a href="/pricing">Click here</a>
+
+// PASS: Descriptive
+<a href="/pricing">View pricing plans</a>
+
+// PASS: Context via aria-label
+<a href="/article/123" aria-label="Read full article about React hooks">
+  Read more
+</a>
+```
+
+**1.3.5 Identify Input Purpose (Level AA)**
+- Common inputs missing `autocomplete` attribute
+- Applies to: name, email, tel, address, cc-number, etc.
+
+```jsx
+// FAIL: Missing autocomplete
+<input type="email" name="email" />
+
+// PASS: With autocomplete
+<input type="email" name="email" autocomplete="email" />
+```
+
+**2.5.3 Label in Name (Level A)**
+- Visible label text not included in accessible name
+- `aria-label` that doesn't match visible text
+
+```jsx
+// FAIL: Mismatch
+<button aria-label="Submit form">Send</button>
+
+// PASS: Matches
+<button aria-label="Send message">Send</button>
+```

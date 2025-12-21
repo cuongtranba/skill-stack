@@ -438,3 +438,73 @@ Files analyzed: N (from [scope])
 Proceeding to manual checklist...
 ═══════════════════════════════════════════════════════════════════════
 ```
+
+## Fix Flow
+
+After presenting the report, offer to fix issues by severity (CRITICAL first):
+
+### Fixing Pattern
+
+```
+Starting with CRITICAL issues (N total):
+
+────────────────────────────────────────────────────────────────
+Issue 1/N: [1.1.1] Missing alt text
+File: src/components/ProductCard.tsx:18
+────────────────────────────────────────────────────────────────
+
+Current code:
+  <img src={product.image} />
+
+Options:
+1. Add descriptive alt → <img src={product.image} alt={product.name} />
+2. Mark as decorative → <img src={product.image} alt="" role="presentation" />
+3. Skip (I'll fix manually)
+
+Which approach?
+```
+
+### After User Selection
+
+Apply the fix using the Edit tool, then continue:
+
+```
+✓ Fixed: Added alt={product.name}
+
+────────────────────────────────────────────────────────────────
+Issue 2/N: [2.1.1] Click without keyboard support
+File: src/components/Modal.tsx:45
+────────────────────────────────────────────────────────────────
+...
+```
+
+### Completion
+
+```
+═══════════════════════════════════════════════════════════════════════
+CRITICAL issues: 3/3 fixed
+MAJOR issues: 4/5 fixed (1 skipped)
+MINOR issues: 0/2 fixed (user declined)
+═══════════════════════════════════════════════════════════════════════
+
+Proceeding to manual review checklist...
+```
+
+### Fix Suggestions by Issue Type
+
+**Missing alt text:**
+1. Add descriptive alt from context (variable name, nearby text)
+2. Mark as decorative with `alt="" role="presentation"`
+
+**Keyboard accessibility:**
+1. Replace `<div>` with `<button>`
+2. Add `onKeyDown`, `tabIndex={0}`, `role="button"`
+
+**Contrast issues:**
+1. Suggest specific darker/lighter color that passes
+2. Provide both hex code and Tailwind class name
+
+**Missing labels:**
+1. Wrap input with `<label>`
+2. Add `aria-label` attribute
+3. Add `id` and connect with `htmlFor`

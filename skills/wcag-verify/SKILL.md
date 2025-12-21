@@ -1,13 +1,13 @@
 ---
 name: wcag-verify
-description: Post-task WCAG 2.1 A/AA verification - checks modified frontend files for accessibility issues with color contrast analysis including interactive states
+description: Strict WCAG 2.1 A/AA accessibility reviewer - detects and flags low-contrast and accessibility issues without excuses
 ---
 
 # WCAG Verify Skill
 
-Verify frontend files for WCAG 2.1 Level A/AA compliance after coding tasks.
+**Role:** Senior frontend accessibility reviewer. Be STRICT. Do NOT excuse issues.
 
-**Announce:** "Checking [scope] for WCAG 2.1 A/AA compliance..."
+**Announce:** "Reviewing [scope] for WCAG 2.1 A/AA compliance..."
 
 ## Scope Detection
 
@@ -18,70 +18,121 @@ Verify frontend files for WCAG 2.1 Level A/AA compliance after coding tasks.
 | file/folder path | Analyze specified path |
 | "all" | Full project scan |
 
-Filter for: `*.html`, `*.jsx`, `*.tsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`
+Filter: `*.html`, `*.jsx`, `*.tsx`, `*.vue`, `*.svelte`, `*.css`, `*.scss`
 
-## Automated Checks
+## Assumptions (Non-Negotiable)
 
-### CRITICAL (Level A) - Blocks access
-- **1.1.1** Images missing `alt` (or empty alt on non-decorative)
-- **1.3.1** Form inputs without labels, tables without headers
-- **2.1.1** `onClick` without keyboard support (`onKeyDown`/`tabIndex`)
-- **4.1.2** Icon-only buttons without `aria-label`, missing ARIA states
+- Users have imperfect vision
+- Screens may be low-brightness
+- Must pass WCAG 2.1 contrast rules
+- Do NOT say "acceptable" or "still readable"
+- If contrast is weak, FLAG IT
 
-### MAJOR (Level A/AA) - Significant barriers
-- **1.4.3** Text contrast < 4.5:1 (or < 3:1 for large text)
-- **1.4.11** UI component contrast < 3:1
-- **2.4.4** Generic link text ("click here", "read more")
-- **1.3.5** Inputs missing `autocomplete` attribute
+## Elements to Inspect
+
+**MUST specifically check:**
+1. Status badges ("Live", "Beta", "New")
+2. Active/selected navigation items
+3. Secondary text (subtitle, description, helper)
+4. Sidebar icons (stroke weight + color)
+5. Section titles/dividers (uppercase, small text)
+6. Any `gray-400`, `gray-300`, `slate-400`, opacity utilities
+7. Any `text-white` on light backgrounds
+8. Placeholder text
+9. Disabled states
+10. Focus rings/outlines
+
+## Low-Contrast Definition (Non-Negotiable)
+
+Flag if:
+- Text color visually close to background
+- Active state not clearly distinguishable
+- Badge text blends with badge background
+- Icon strokes fade into background
+- Labels hard to notice during fast scanning
+- Text on light backgrounds without strong contrast
+- Contrast relies only on hue, not luminance
+
+## Contrast Requirements
+
+- Normal text (< 18pt): **4.5:1 minimum**
+- Large text (≥ 18pt or 14pt bold): **3:1 minimum**
+- UI components, icons, focus indicators: **3:1 minimum**
+
+**Common failures:**
+- `gray-400` on white = 2.68:1 ✗
+- `gray-500` on white = 4.54:1 ✓
+- `placeholder-gray-400` = FAIL
+- `hover:bg-blue-400` with white text often FAILS
+
+## Check ALL States
+
+Trace through: default → `:hover` → `:active` → `:focus` → `:disabled` → `::placeholder`
+
+Each state must independently pass contrast requirements.
+
+## Output Format (Strict)
+
+For EACH issue:
+```
+---
+Issue #N
+Element: [component/element name]
+Location: [file:line]
+Visual: [text color] on [background color]
+Problem: [why this is a contrast failure]
+Risk: [what users may miss or misread]
+WCAG: FAIL / BORDERLINE
+---
+```
+
+After all issues, add:
+```
+## Systemic Contrast Problems
+[Identify repeated design mistakes: light-on-light, gray abuse, weak active states, etc.]
+```
+
+## Other WCAG Checks
+
+### CRITICAL (Level A)
+- **1.1.1** Images missing `alt`
+- **1.3.1** Inputs without labels, tables without headers
+- **2.1.1** `onClick` without keyboard support
+- **4.1.2** Icon buttons without `aria-label`
+
+### MAJOR (Level A/AA)
+- **2.4.4** Generic link text ("click here")
+- **1.3.5** Inputs missing `autocomplete`
 - **2.5.3** `aria-label` doesn't match visible text
 
-### MINOR (Level AA) - Improvements
-- **1.4.4** Font sizes in `px` instead of `rem`/`em`
-- **2.4.6** Empty headings, skipped heading levels
-- **1.4.10** Fixed widths > 320px causing horizontal scroll
-
-## Color Contrast Analysis
-
-**Trace colors through:** inline styles → Tailwind classes → CSS variables → SCSS variables → design tokens
-
-**Check ALL states:** default, `:hover`, `:active`, `:focus`, `:disabled`, `::placeholder`
-
-**Requirements:** Normal text 4.5:1, large text 3:1, UI components 3:1
-
-**Common Tailwind issues:**
-- `gray-400` fails on white (2.68:1) - use `gray-500`+
-- `hover:bg-blue-400` often fails - use darker shade
-- `placeholder-gray-400` fails - use `placeholder-gray-500`+
-
-## Output Format
-
-Group by severity: CRITICAL → MAJOR → MINOR
-
-For each issue show: criterion, file:line, code snippet, fix suggestion
-
-## Fix Flow
-
-1. Present severity-grouped report
-2. Offer to fix CRITICAL first, then MAJOR, then MINOR
-3. For each: show current code, offer fix options, apply with Edit tool
-4. Track: fixed / skipped / declined
+### MINOR (Level AA)
+- **1.4.4** Font sizes in `px` not `rem`
+- **2.4.6** Empty/skipped headings
+- **1.4.10** Fixed widths > 320px
 
 ## Manual Checklist
 
-After automated fixes, walk through items needing human judgment:
+After automated review:
+- 1.2.1 Media alternatives
+- 1.3.3 Sensory-only instructions
+- 1.4.1 Color-only meaning
+- 2.1.2 Keyboard trap
+- 2.4.3 Focus order
+- 2.4.7 Focus visible
+- 3.1.1 Lang attribute
+- 4.1.1 Valid HTML
 
-**Perceivable:** 1.2.1 Media alternatives, 1.3.3 Sensory instructions, 1.4.1 Color-only meaning
-**Operable:** 2.1.2 Keyboard trap, 2.2.1 Timing, 2.3.1 Flashes, 2.4.3 Focus order, 2.4.7 Focus visible
-**Understandable:** 3.1.1 Lang attribute, 3.2.1/3.2.2 Context changes, 3.3.1/3.3.2 Error handling
-**Robust:** 4.1.1 Valid HTML (no duplicate IDs)
+## Rules
 
-Filter checklist by file content (skip media items if no video/audio).
+**You are FORBIDDEN from:**
+- Ignoring "minor" contrast issues
+- Justifying contrast by aesthetics
+- Assuming users can adapt
+- Saying "looks okay" or "still usable"
+- Proposing fixes before explaining problems
 
-## Guidelines
-
-- Read files thoroughly before flagging
-- Be specific: file path + line number + actual code
-- Trace colors fully through all layers
-- Check ALL interactive states for contrast
-- Offer fixes with exact replacement code
-- Ask when criteria need human judgment
+**You MUST:**
+- Be critical
+- Flag everything weak
+- Explain why it fails
+- Identify systemic patterns

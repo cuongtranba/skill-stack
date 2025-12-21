@@ -301,3 +301,75 @@ Contrast ratio = (L1 + 0.05) / (L2 + 0.05)
 | gray-500 (#6B7280) | 4.54:1 ✓ | 4.15:1 ✗ | 3.23:1 ✗ |
 | gray-600 (#4B5563) | 7.08:1 ✓ | 6.47:1 ✓ | 2.07:1 ✗ |
 | gray-700 (#374151) | 10.31:1 ✓ | 9.43:1 ✓ | 1.42:1 ✗ |
+
+## State-Based Contrast Checking
+
+Check ALL interactive states, not just default:
+
+| State | CSS Selector | Common Issues |
+|-------|--------------|---------------|
+| Default | (none) | Base colors |
+| Hover | `:hover` | Often lighter, loses contrast |
+| Active | `:active` | Subtle change, same as hover |
+| Focus | `:focus`, `:focus-visible` | Ring/outline too light |
+| Visited | `:visited` | Purple on dark backgrounds |
+| Disabled | `:disabled`, `[disabled]` | Needs 3:1 for UI components |
+| Placeholder | `::placeholder` | Notorious for failing |
+| Selection | `::selection` | Often forgotten |
+
+### Tracing States in CSS
+
+```css
+.button {
+  background: #3B82F6;    /* ← Check default */
+  color: white;
+}
+.button:hover {
+  background: #60A5FA;    /* ← Check: lighter blue, may fail */
+}
+.button:active {
+  background: #2563EB;    /* ← Check active */
+}
+.button:focus {
+  outline: 2px solid #93C5FD;  /* ← Check focus ring contrast */
+}
+.button:disabled {
+  background: #E5E7EB;
+  color: #9CA3AF;         /* ← Check: needs 3:1 minimum */
+}
+```
+
+### Tracing States in Tailwind
+
+```jsx
+<button className="
+  bg-blue-500 text-white           // default
+  hover:bg-blue-400                 // hover - lighter!
+  active:bg-blue-600                // active
+  focus:ring-2 focus:ring-blue-300  // focus ring
+  disabled:bg-gray-200 disabled:text-gray-400  // disabled
+">
+```
+
+Map each state prefix to its color and check contrast.
+
+### State Contrast Output Format
+
+```
+State Contrast Analysis: src/components/Button.tsx
+
+State        │ Foreground │ Background │ Ratio  │ Required │ Status
+─────────────┼────────────┼────────────┼────────┼──────────┼────────
+default      │ #FFFFFF    │ #3B82F6    │ 4.68:1 │ 4.5:1    │ ✓ PASS
+:hover       │ #FFFFFF    │ #60A5FA    │ 2.98:1 │ 4.5:1    │ ✗ FAIL
+:active      │ #FFFFFF    │ #2563EB    │ 5.32:1 │ 4.5:1    │ ✓ PASS
+:focus-ring  │ #93C5FD    │ #3B82F6    │ 1.74:1 │ 3:1      │ ✗ FAIL
+:disabled    │ #9CA3AF    │ #E5E7EB    │ 2.15:1 │ 3:1      │ ✗ FAIL
+::placeholder│ #9CA3AF    │ #FFFFFF    │ 2.57:1 │ 4.5:1    │ ✗ FAIL
+
+Suggested fixes:
+• :hover → Use bg-blue-600 (#2563EB) instead of bg-blue-400
+• :focus-ring → Use ring-blue-600 instead of ring-blue-300
+• :disabled → Use text-gray-500 (#6B7280) for 3:1 minimum
+• ::placeholder → Use placeholder-gray-500 or darker
+```

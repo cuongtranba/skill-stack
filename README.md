@@ -6,7 +6,7 @@ Build and run personalized skill workflows through Socratic guidance.
 
 ```bash
 # Add marketplace
-/plugin marketplace add ./
+/plugin marketplace add github.com/cuongtranba/skill-stack
 
 # Install plugin
 /plugin install skill-stack@skill-stack-marketplace

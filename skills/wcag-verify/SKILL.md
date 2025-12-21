@@ -373,3 +373,68 @@ Suggested fixes:
 • :disabled → Use text-gray-500 (#6B7280) for 3:1 minimum
 • ::placeholder → Use placeholder-gray-500 or darker
 ```
+
+## Output Format
+
+Present findings grouped by severity:
+
+```
+═══════════════════════════════════════════════════════════════════════
+WCAG 2.1 A/AA Verification Report
+Files analyzed: N (from [scope description])
+═══════════════════════════════════════════════════════════════════════
+
+CRITICAL (N issues) - Blocks access for some users
+───────────────────────────────────────────────────────────────────────
+1. [1.1.1] Missing alt text
+   src/components/ProductCard.tsx:18
+   <img src={product.image} />
+   Fix: Add alt={product.name} or alt="" if decorative
+
+2. [2.1.1] Click handler without keyboard support
+   src/components/Modal.tsx:45
+   <div onClick={handleClose}>×</div>
+   Fix: Use <button> or add onKeyDown + tabIndex + role="button"
+
+MAJOR (N issues) - Significant barriers
+───────────────────────────────────────────────────────────────────────
+3. [1.4.3] Contrast fail: :hover state
+   src/components/Button.tsx:34
+   Text #FFFFFF on background #60A5FA
+   Ratio: 2.98:1 (need 4.5:1)
+   Fix: Use #2563EB (bg-blue-600) instead
+
+4. [1.4.3] Contrast fail: ::placeholder
+   src/components/Input.tsx:22
+   Placeholder #9CA3AF on background #FFFFFF
+   Ratio: 2.57:1 (need 4.5:1)
+   Fix: Use #6B7280 (gray-500) or darker
+
+MINOR (N issues) - Improvements recommended
+───────────────────────────────────────────────────────────────────────
+5. [1.4.4] Fixed font size
+   src/styles/global.css:15
+   font-size: 14px
+   Fix: Use 0.875rem instead
+
+═══════════════════════════════════════════════════════════════════════
+Summary: N critical, N major, N minor
+Manual checklist: N items to review
+
+Proceed with fixes? (Starting with CRITICAL)
+═══════════════════════════════════════════════════════════════════════
+```
+
+### No Issues Found
+
+```
+═══════════════════════════════════════════════════════════════════════
+WCAG 2.1 A/AA Verification Report
+Files analyzed: N (from [scope])
+═══════════════════════════════════════════════════════════════════════
+
+✓ No automated issues found!
+
+Proceeding to manual checklist...
+═══════════════════════════════════════════════════════════════════════
+```

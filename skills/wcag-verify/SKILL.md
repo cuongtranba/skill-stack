@@ -177,3 +177,50 @@ Read each file and check for these WCAG violations:
 // PASS: Matches
 <button aria-label="Send message">Send</button>
 ```
+
+### MINOR - Improvements recommended
+
+**1.4.4 Resize Text (Level AA)**
+- Font sizes in fixed `px` units instead of relative (`rem`, `em`)
+- Line heights in fixed units
+- Container heights that could clip text
+
+```css
+/* FAIL: Fixed px */
+font-size: 14px;
+
+/* PASS: Relative units */
+font-size: 0.875rem;
+```
+
+**2.4.6 Headings and Labels (Level AA)**
+- Empty headings (`<h1></h1>`)
+- Headings with only whitespace
+- Non-descriptive headings ("Section 1", "Untitled")
+- Skipped heading levels (h1 → h3)
+
+```jsx
+// FAIL: Empty
+<h2></h2>
+
+// FAIL: Skipped level
+<h1>Title</h1>
+<h3>Subsection</h3>  // Should be h2
+
+// PASS: Descriptive hierarchy
+<h1>Product Catalog</h1>
+<h2>Electronics</h2>
+```
+
+**1.4.10 Reflow (Level AA)**
+- Fixed widths > 320px that cause horizontal scroll
+- `overflow-x: scroll` on content containers
+- Viewport-dependent layouts without flexibility
+
+```css
+/* FAIL: Fixed width */
+.container { width: 1200px; }
+
+/* PASS: Flexible */
+.container { max-width: 1200px; width: 100%; }
+```

@@ -508,3 +508,110 @@ Proceeding to manual review checklist...
 1. Wrap input with `<label>`
 2. Add `aria-label` attribute
 3. Add `id` and connect with `htmlFor`
+
+## Manual Review Checklist
+
+After automated fixes, walk through items requiring human judgment:
+
+### Checklist Presentation
+
+```
+═══════════════════════════════════════════════════════════════════════
+Manual Review Checklist
+Based on file types changed, N items apply
+═══════════════════════════════════════════════════════════════════════
+
+PERCEIVABLE
+☐ 1.2.1 Audio/Video Alternatives - Media has captions/transcripts?
+☐ 1.3.3 Sensory Characteristics - Instructions use more than shape/color?
+☐ 1.4.1 Use of Color - Meaning conveyed beyond color alone?
+☐ 1.4.13 Content on Hover - Hover content dismissible/hoverable/persistent?
+
+OPERABLE
+☐ 2.1.2 No Keyboard Trap - Can tab out of all components?
+☐ 2.2.1 Timing Adjustable - Time limits can be extended?
+☐ 2.3.1 Three Flashes - Nothing flashes more than 3x/second?
+☐ 2.4.3 Focus Order - Tab order is logical?
+☐ 2.4.7 Focus Visible - Focus indicator always visible?
+
+UNDERSTANDABLE
+☐ 3.1.1 Language of Page - Has lang attribute?
+☐ 3.2.1 On Focus - Focus doesn't cause unexpected changes?
+☐ 3.2.2 On Input - Input doesn't cause unexpected changes?
+☐ 3.3.1 Error Identification - Errors described in text?
+☐ 3.3.2 Labels or Instructions - Form fields have instructions?
+
+ROBUST
+☐ 4.1.1 Parsing - Valid HTML (no duplicate IDs)?
+
+Let's review: [First applicable item]
+```
+
+### Context-Aware Filtering
+
+Only show items relevant to changed files:
+
+| File Types Changed | Show These Checklist Items |
+|-------------------|---------------------------|
+| Has `<video>` or `<audio>` | 1.2.1 Audio/Video Alternatives |
+| Has forms | 3.3.1, 3.3.2 Error/Labels |
+| Has animations/transitions | 2.3.1 Three Flashes |
+| Has modals/dialogs | 2.1.2 No Keyboard Trap |
+| Has timed content | 2.2.1 Timing Adjustable |
+
+### Walking Through Items
+
+For each item:
+
+```
+────────────────────────────────────────────────────────────────
+☐ 1.4.1 Use of Color (Level A)
+────────────────────────────────────────────────────────────────
+
+Question: Does your UI convey information using color alone?
+
+Examples that fail:
+• "Required fields are marked in red" (no icon/asterisk)
+• Error states only shown by red border (no text/icon)
+• Active tab only distinguished by color
+
+Looking at your changes in:
+• src/components/Form.tsx - has form inputs
+• src/components/Alert.tsx - has status indicators
+
+Does any of this convey meaning through color alone?
+[Yes / No / Unsure - let me check]
+```
+
+### Recording Results
+
+```
+Manual Review Progress:
+
+PERCEIVABLE
+✓ 1.3.3 Sensory - PASS (no shape/color-only instructions)
+✓ 1.4.1 Color Use - PASS (errors have icons + text)
+☐ 1.4.13 Hover Content - checking...
+
+OPERABLE
+✓ 2.4.3 Focus Order - PASS
+✗ 2.4.7 Focus Visible - FAIL (modal close button)
+  → Added to fix list
+
+Remaining: 3 items
+```
+
+### Completion
+
+```
+═══════════════════════════════════════════════════════════════════════
+Manual Review Complete
+═══════════════════════════════════════════════════════════════════════
+
+Results:
+• PASS: 12 items
+• FAIL: 1 item (fix applied)
+• N/A: 2 items (not applicable to changes)
+
+All WCAG 2.1 A/AA checks complete!
+```

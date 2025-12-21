@@ -34,6 +34,15 @@ Build and run personalized skill workflows through Socratic guidance.
 - **Auto-Validation** - Detect and fix issues conversationally
 - **Mermaid Diagrams** - Visual workflow representation
 
+## Skills
+
+| Skill | Description |
+|-------|-------------|
+| `stack-build` | Socratic builder for creating stacks through guided questions |
+| `stack-run` | Execution engine for running stack workflows |
+| `stack-validate` | Validates stack YAML and offers conversational fixes |
+| `wcag-verify` | Strict WCAG 2.1 A/AA accessibility reviewer for frontend files |
+
 ## Documentation
 
 - [Design Document](docs/plans/2025-12-19-skill-stack-design.md)

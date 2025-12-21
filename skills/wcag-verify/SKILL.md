@@ -44,3 +44,82 @@ find src/components -type f \( -name "*.tsx" -o -name "*.jsx" -o -name "*.vue" \
 ```
 
 If no frontend files found, report: "No frontend files found in [scope]. Nothing to verify."
+
+## Automated Checks
+
+Read each file and check for these WCAG violations:
+
+### CRITICAL - Blocks access for some users
+
+**1.1.1 Non-text Content (Level A)**
+- Images missing `alt` attribute
+- Images with empty `alt=""` that are not decorative
+- `<svg>` without `aria-label` or `<title>`
+- `<canvas>` without fallback text
+- Icon fonts without text alternative
+
+```jsx
+// FAIL: Missing alt
+<img src="photo.jpg" />
+
+// PASS: Descriptive alt
+<img src="photo.jpg" alt="Team photo from company retreat" />
+
+// PASS: Decorative (explicitly empty)
+<img src="decoration.svg" alt="" />
+```
+
+**1.3.1 Info and Relationships (Level A)**
+- Form inputs without associated `<label>` or `aria-label`
+- Tables without `<th>` headers
+- Fieldsets without `<legend>`
+- Related inputs not grouped
+
+```jsx
+// FAIL: Input without label
+<input type="email" name="email" />
+
+// PASS: With label
+<label>Email <input type="email" name="email" /></label>
+
+// PASS: With aria-label
+<input type="email" aria-label="Email address" />
+```
+
+**2.1.1 Keyboard (Level A)**
+- `onClick` without keyboard equivalent (`onKeyDown`/`onKeyPress`)
+- Non-interactive elements with click handlers (missing `tabIndex`)
+- Custom controls without keyboard support
+
+```jsx
+// FAIL: Click-only
+<div onClick={handleClick}>Click me</div>
+
+// PASS: Keyboard accessible
+<button onClick={handleClick}>Click me</button>
+
+// PASS: Div with keyboard support
+<div onClick={handleClick} onKeyDown={handleKey} tabIndex={0} role="button">
+  Click me
+</div>
+```
+
+**4.1.2 Name, Role, Value (Level A)**
+- Buttons containing only icons without `aria-label`
+- Links without discernible text
+- Custom components without ARIA roles
+- Toggles without state indication (`aria-pressed`, `aria-expanded`)
+
+```jsx
+// FAIL: Icon-only button
+<button><SearchIcon /></button>
+
+// PASS: With aria-label
+<button aria-label="Search"><SearchIcon /></button>
+
+// PASS: With visually-hidden text
+<button>
+  <SearchIcon />
+  <span className="sr-only">Search</span>
+</button>
+```

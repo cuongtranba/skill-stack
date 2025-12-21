@@ -615,3 +615,74 @@ Results:
 
 All WCAG 2.1 A/AA checks complete!
 ```
+
+## Guidelines
+
+- **Announce scope** at start: "Checking [N files] from [scope]..."
+- **Read files thoroughly** before flagging issues
+- **Be specific** with locations: file path + line number
+- **Show actual code** that has the issue
+- **Offer fixes** with exact replacement code
+- **Prioritize by severity** - CRITICAL blocks users entirely
+- **Skip non-applicable** checklist items based on file content
+- **Trace colors fully** through variables, tokens, and configs
+- **Check ALL states** for contrast, not just default
+- **Ask when unsure** - some criteria need human judgment
+
+## Quick Reference: WCAG 2.1 A/AA Criteria
+
+### Level A (Must fix - basic accessibility)
+
+| # | Criterion | Quick Check |
+|---|-----------|-------------|
+| 1.1.1 | Non-text Content | All images have alt |
+| 1.2.1 | Audio/Video Only | Media has alternatives |
+| 1.3.1 | Info & Relationships | Forms have labels, tables have headers |
+| 1.3.2 | Meaningful Sequence | DOM order matches visual |
+| 1.3.3 | Sensory Characteristics | Instructions don't rely on shape/color |
+| 1.4.1 | Use of Color | Color isn't only indicator |
+| 1.4.2 | Audio Control | Auto-playing audio can be paused |
+| 2.1.1 | Keyboard | All interactive elements keyboard accessible |
+| 2.1.2 | No Keyboard Trap | Can tab out of everything |
+| 2.1.4 | Character Key Shortcuts | Single-key shortcuts can be turned off |
+| 2.2.1 | Timing Adjustable | Time limits can be extended |
+| 2.2.2 | Pause, Stop, Hide | Moving content can be paused |
+| 2.3.1 | Three Flashes | Nothing flashes > 3x/second |
+| 2.4.1 | Bypass Blocks | Skip links or landmarks present |
+| 2.4.2 | Page Titled | Pages have descriptive titles |
+| 2.4.3 | Focus Order | Tab order is logical |
+| 2.4.4 | Link Purpose | Link text is descriptive |
+| 2.5.1 | Pointer Gestures | Complex gestures have alternatives |
+| 2.5.2 | Pointer Cancellation | Actions on up-event, can abort |
+| 2.5.3 | Label in Name | Visible label in accessible name |
+| 2.5.4 | Motion Actuation | Motion controls have alternatives |
+| 3.1.1 | Language of Page | HTML has lang attribute |
+| 3.2.1 | On Focus | Focus doesn't change context |
+| 3.2.2 | On Input | Input doesn't change context unexpectedly |
+| 3.3.1 | Error Identification | Errors described in text |
+| 3.3.2 | Labels or Instructions | Form inputs have instructions |
+| 4.1.1 | Parsing | Valid HTML |
+| 4.1.2 | Name, Role, Value | Custom controls have ARIA |
+
+### Level AA (Should fix - enhanced accessibility)
+
+| # | Criterion | Quick Check |
+|---|-----------|-------------|
+| 1.3.4 | Orientation | Works in portrait and landscape |
+| 1.3.5 | Identify Input Purpose | Inputs have autocomplete |
+| 1.4.3 | Contrast (Minimum) | Text 4.5:1, large text 3:1 |
+| 1.4.4 | Resize Text | Works at 200% zoom |
+| 1.4.5 | Images of Text | Use real text, not images |
+| 1.4.10 | Reflow | No horizontal scroll at 320px |
+| 1.4.11 | Non-text Contrast | UI components 3:1 |
+| 1.4.12 | Text Spacing | Works with increased spacing |
+| 1.4.13 | Content on Hover | Hover content dismissible |
+| 2.4.5 | Multiple Ways | Multiple ways to find pages |
+| 2.4.6 | Headings and Labels | Descriptive headings |
+| 2.4.7 | Focus Visible | Focus indicator visible |
+| 3.1.2 | Language of Parts | Language changes marked |
+| 3.2.3 | Consistent Navigation | Navigation consistent |
+| 3.2.4 | Consistent Identification | Components consistent |
+| 3.3.3 | Error Suggestion | Suggest corrections |
+| 3.3.4 | Error Prevention | Confirm/review important actions |
+| 4.1.3 | Status Messages | Status changes announced |

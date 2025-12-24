@@ -89,6 +89,12 @@ Should backend and frontend run in parallel or sequential?
 
 ...
 
+Where should I save 'my-feature' stack?
+1. Personal (~/.claude/stacks/) - Available across all projects
+2. Project (.claude/stacks/) - Shared with team via git
+
+> 1
+
 ✓ Stack saved to ~/.claude/stacks/my-feature.yaml
 ```
 

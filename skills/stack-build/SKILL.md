@@ -101,10 +101,21 @@ Show current steps first, then ask:
 
 ### Phase 5: Finalization
 
+**CRITICAL: Always ask for save location BEFORE saving. Never assume a default location.**
+
 | Question | Header | Options |
 |----------|--------|---------|
-| "Save as personal or project stack?" | Location | Personal (~/.claude/stacks/), Project (.claude/stacks/) |
 | "What should we name this stack?" | Name | (suggest 2-3 names based on task type) |
+| "Where should I save '[name]' stack?" | Location | Personal (~/.claude/stacks/) - Available across all projects, Project (.claude/stacks/) - Shared with team via git |
+
+**Location options explained:**
+- **Personal**: `~/.claude/stacks/[name].yaml` - Only you can use it, works in any project
+- **Project**: `.claude/stacks/[name].yaml` - Checked into repo, shared with team
+
+After user confirms location, acknowledge their choice:
+```
+Saving to [chosen location]: [full path]
+```
 
 ## YAML Generation
 
@@ -245,5 +256,8 @@ If you catch yourself doing any of these, STOP and use `AskUserQuestion`:
 | Listing options with bullet points | Use options array in tool |
 | Asking "Which do you prefer?" in prose | Use tool with header + options |
 | Batching multiple questions at once | One question per tool call |
+| Saving to ~/.claude/stacks/ without asking | Ask location first via tool |
+| Assuming personal or project location | Always confirm with user |
 
 **Plain text questions = skill violation. Always use the tool.**
+**Saving without location confirmation = skill violation. Always ask first.**

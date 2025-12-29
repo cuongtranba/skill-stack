@@ -8,7 +8,7 @@
     {
       "name": "skill-stack",
       "description": "Build and run personalized skill workflows through Socratic guidance",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "./"
     }
   ]

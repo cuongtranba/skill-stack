@@ -256,6 +256,7 @@ Steps execute sequentially by default. Use `parallel:` blocks for concurrent wor
 | `stack-run` | Execution engine for running workflows |
 | `stack-validate` | Validates YAML and offers conversational fixes |
 | `wcag-verify` | WCAG 2.1 A/AA accessibility reviewer for frontend files |
+| `test-quality-verify` | Strict test quality gatekeeper - blocks trivial, shallow, and useless tests |
 
 ## Documentation
 

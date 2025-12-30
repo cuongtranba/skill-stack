@@ -13,6 +13,32 @@ Validate stack YAML files and help fix issues conversationally.
 
 ## Validation Checks
 
+### 0. Syntax Validation (First Step)
+
+Before any other validation, verify the YAML parses correctly:
+
+```bash
+# Check YAML syntax using Python (widely available)
+python3 -c "import yaml, sys; yaml.safe_load(open(sys.argv[1]))" "$STACK_FILE" 2>&1
+```
+
+**If syntax error:**
+```
+Stack '[name]' has invalid YAML syntax:
+
+  Line [N]: [error message from parser]
+
+  Example: "mapping values are not allowed here"
+
+Fix the YAML syntax before validation can continue.
+Common issues:
+- Missing quotes around strings with special characters
+- Incorrect indentation (use 2 spaces, no tabs)
+- Missing colons after keys
+```
+
+**Only proceed to schema validation if syntax check passes.**
+
 ### 1. Schema Validation
 
 **Required fields:**
@@ -61,6 +87,11 @@ Validate stack YAML files and help fix issues conversationally.
 
 ### 2. Reference Validation
 
+```bash
+# Set base path
+CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
+```
+
 **Check skill refs exist:**
 ```bash
 # For each skill ref in stack
@@ -69,21 +100,21 @@ plugin=$(echo "$ref" | cut -d: -f1)
 skill=$(echo "$ref" | cut -d: -f2)
 
 # Check plugin skills
-ls ~/.claude/plugins/cache/$plugin/*/skills/$skill/SKILL.md 2>/dev/null
+ls "$CLAUDE_HOME/plugins/cache/$plugin"/*/skills/"$skill"/SKILL.md 2>/dev/null
 
 # Check personal skills
-ls ~/.claude/skills/$skill/SKILL.md 2>/dev/null
+ls "$CLAUDE_HOME/skills/$skill/SKILL.md" 2>/dev/null
 ```
 
 **Check command refs exist:**
 ```bash
 # For each command ref
-ls ~/.claude/commands/$ref.md 2>/dev/null
+ls "$CLAUDE_HOME/commands/$ref.md" 2>/dev/null
 ```
 
 **Check stack refs exist (for nested/extends):**
 ```bash
-ls ~/.claude/stacks/$ref.yaml .claude/stacks/$ref.yaml 2>/dev/null
+ls "$CLAUDE_HOME/stacks/$ref.yaml" .claude/stacks/"$ref.yaml" 2>/dev/null
 ```
 
 ### 3. Logic Validation

@@ -63,7 +63,7 @@ def execute_step(step):
         case "command":
             invoke_command(step.ref)
         case "bash":
-            run_bash(step.run)
+            run_bash_with_timeout(step.run, step.timeout)
         case "stack":
             run_nested_stack(step.ref)
 
@@ -73,6 +73,17 @@ def execute_step(step):
         handle_branch(step.branch)
     else:
         handle_transition(step.transition)
+
+def run_bash_with_timeout(command, timeout_seconds=120):
+    """Execute bash command with timeout protection."""
+    # Use timeout command (available on macOS and Linux)
+    # Exit code 124 indicates timeout
+    result = execute(f"timeout {timeout_seconds} bash -c '{command}'")
+
+    if result.exit_code == 124:
+        raise TimeoutError(f"Step timed out after {timeout_seconds}s")
+
+    return result
 ```
 
 ### Parallel Block Execution
@@ -106,17 +117,46 @@ def execute_parallel(block):
 
 **Subagent prompt template:**
 ```
-Execute this workflow step:
+You are executing a parallel branch of the '[parent-stack-name]' workflow.
 
-Name: [branch.name]
+## Your Task
+
+Step: [branch.name]
 Type: [branch.type]
 Reference: [branch.ref]
 Args: [branch.args]
 
-Context from parent workflow:
-[relevant context/outputs]
+## Parent Workflow Context
 
-Execute and report results.
+Stack: [parent-stack-name]
+Description: [parent-stack-description]
+Current Phase: Parallel block '[block.name]'
+Your Branch: [branch-index] of [total-branches]
+
+## Available Context (from previous steps)
+
+[For each captured output from earlier steps:]
+- [output_name]: [output_value]
+
+## Success Criteria
+
+1. Complete the step fully according to its type
+2. If type=skill: Invoke the skill and follow its guidance
+3. If type=bash: Execute the command and capture exit code
+4. If type=command: Run the command to completion
+
+## Reporting
+
+When complete, report:
+- Status: success | failure | partial
+- Duration: [time taken]
+- Outputs: [any values captured]
+- Notes: [relevant observations]
+
+If you encounter errors:
+- Report the error clearly
+- Do NOT retry unless explicitly configured
+- Let the parent workflow decide next steps
 ```
 
 ### Loop Block Execution

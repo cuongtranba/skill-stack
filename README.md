@@ -259,6 +259,32 @@ Steps execute sequentially by default. Use `parallel:` blocks for concurrent wor
 | `test-quality-verify` | Strict test quality gatekeeper - blocks trivial, shallow, and useless tests |
 | `dev-verify` | Development completion gatekeeper - tests, coverage, lint, and test quality |
 
+## Configuration (Optional)
+
+Create `.claude/skill-stack.local.md` in your project for custom settings:
+
+```markdown
+---
+preferred_model: sonnet
+default_location: project
+auto_validate: true
+default_transition: prompt
+---
+
+# Project-specific notes
+
+Any additional context for stack execution in this project.
+```
+
+| Setting | Values | Default | Description |
+|---------|--------|---------|-------------|
+| `preferred_model` | sonnet, opus, haiku | sonnet | Model for stack agent |
+| `default_location` | personal, project | (ask) | Default save location |
+| `auto_validate` | true, false | true | Validate before running |
+| `default_transition` | auto, prompt, pause | prompt | Step transition mode |
+
+This file is project-local and should be added to `.gitignore` if it contains personal preferences.
+
 ## Documentation
 
 - [YAML Schema](references/yaml-schema.md) - Complete specification

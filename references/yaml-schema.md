@@ -53,6 +53,7 @@ steps:                            # Required: array of steps
   transition: auto | prompt | pause  # Optional
   on_error: stop | continue | retry | ask  # Optional
   max_retries: number             # Optional: for retry mode
+  timeout: number                 # Optional: max seconds for bash steps (default: 120)
   when: string                    # Optional: condition to execute
   outputs: [string]               # Optional: values to capture
   branch:                         # Optional: conditional flow

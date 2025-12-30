@@ -15,107 +15,94 @@ Guide users through creating skill workflow stacks via Socratic questioning.
 
 ## Discovery Phase
 
-**First, discover available resources:**
+**First, discover available resources with explicit error handling:**
 
 ```bash
+# Set base paths
+CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
+
+echo "=== Discovering Resources ==="
+
 # Personal skills
-ls ~/.claude/skills/*/SKILL.md 2>/dev/null | while read f; do
-  name=$(dirname "$f" | xargs basename)
-  desc=$(grep -A1 "^description:" "$f" 2>/dev/null | tail -1 | head -c 50)
-  echo "personal:$name - $desc"
-done
+echo "Personal skills:"
+if [ -d "$CLAUDE_HOME/skills" ] && ls "$CLAUDE_HOME/skills"/*/SKILL.md >/dev/null 2>&1; then
+  for f in "$CLAUDE_HOME/skills"/*/SKILL.md; do
+    name=$(dirname "$f" | xargs basename)
+    desc=$(grep -A1 "^description:" "$f" 2>/dev/null | tail -1 | head -c 50)
+    echo "  - $name: $desc"
+  done
+else
+  echo "  (none found)"
+fi
 
 # Plugin skills
-ls ~/.claude/plugins/cache/*/*/skills/*/SKILL.md 2>/dev/null | while read f; do
-  plugin=$(echo "$f" | sed 's|.*/cache/\([^/]*\)/.*|\1|')
-  name=$(dirname "$f" | xargs basename)
-  echo "plugin:$plugin:$name"
-done
+echo "Plugin skills:"
+if ls "$CLAUDE_HOME/plugins/cache"/*/*/skills/*/SKILL.md >/dev/null 2>&1; then
+  for f in "$CLAUDE_HOME/plugins/cache"/*/*/skills/*/SKILL.md; do
+    plugin=$(echo "$f" | sed 's|.*/cache/\([^/]*\)/.*|\1|')
+    name=$(dirname "$f" | xargs basename)
+    echo "  - $plugin:$name"
+  done
+else
+  echo "  (none found)"
+fi
 
 # Commands
-ls ~/.claude/commands/*.md 2>/dev/null | xargs -I{} basename {} .md
+echo "Commands:"
+if [ -d "$CLAUDE_HOME/commands" ] && ls "$CLAUDE_HOME/commands"/*.md >/dev/null 2>&1; then
+  for f in "$CLAUDE_HOME/commands"/*.md; do
+    basename "$f" .md
+  done | sed 's/^/  - /'
+else
+  echo "  (none found)"
+fi
 
 # Existing stacks
-ls ~/.claude/stacks/*.yaml .claude/stacks/*.yaml 2>/dev/null
+echo "Existing stacks:"
+found_stacks=0
+if [ -d "$CLAUDE_HOME/stacks" ] && ls "$CLAUDE_HOME/stacks"/*.yaml >/dev/null 2>&1; then
+  echo "  Personal:"
+  ls "$CLAUDE_HOME/stacks"/*.yaml | xargs -I{} basename {} .yaml | sed 's/^/    - /'
+  found_stacks=1
+fi
+if [ -d ".claude/stacks" ] && ls .claude/stacks/*.yaml >/dev/null 2>&1; then
+  echo "  Project:"
+  ls .claude/stacks/*.yaml | xargs -I{} basename {} .yaml | sed 's/^/    - /'
+  found_stacks=1
+fi
+[ $found_stacks -eq 0 ] && echo "  (none found)"
+
+echo "=== Discovery Complete ==="
 ```
 
-Store discovery results for reference during building.
+Store discovery results for reference during building. If discovery finds no resources, inform the user but continue - they can still build a stack with manually specified references.
 
 ## Socratic Flow
 
-**CRITICAL: You MUST use the `AskUserQuestion` tool for EVERY question. NEVER output plain text questions.**
+**CRITICAL:** Use `AskUserQuestion` tool for ALL questions. Never plain text. One question at a time.
 
-```
-❌ WRONG - Plain text:
-"What's your primary role?
-- Fullstack developer
-- Backend developer"
+### Phases (All Questions via AskUserQuestion)
 
-✅ CORRECT - Use AskUserQuestion tool:
-AskUserQuestion(questions=[{
-  question: "What's your primary role?",
-  header: "Role",
-  options: [
-    {label: "Fullstack developer", description: "Full-stack web development"},
-    {label: "Backend developer", description: "APIs, services, data"},
-    {label: "Frontend developer", description: "UI/UX implementation"},
-    {label: "DevOps/SRE", description: "Infrastructure, deployment"}
-  ],
-  multiSelect: false
-}])
-```
+| Phase | Question | Header | Options |
+|-------|----------|--------|---------|
+| **1. Context** | "What's your primary role?" | Role | Fullstack, Backend, Frontend, DevOps/SRE |
+| | "What kind of task is this stack for?" | Task type | New feature, Bug fix, Code review, Deployment, Planning |
+| **2. Pain Points** | "What slows you down?" | Pain points | Forgetting steps, Manual repetition, Context switching, Quality issues |
+| | "Which steps do you sometimes skip?" | Skipped | (multiSelect: true, derive from role) |
+| **3. Workflow** | "For [task], what do you do first?" | First step | (from discovered skills) |
+| | "After [step], what comes next?" | Next step | (filter by context) |
+| | "Should any steps run in parallel?" | Parallel | Yes, No |
+| | "Should this loop until something passes?" | Looping | Yes, No |
+| **4. Refinement** | "What would you like to do?" | Refine | Add step, Remove step, Reorder, Looks good |
+| | "How should transitions work?" | Transitions | prompt, auto, Mix |
+| **5. Finalize** | "What should we name this stack?" | Name | (suggest 2-3 names) |
+| | "Where should I save '[name]'?" | Location | Personal, Project |
 
-### Phase 1: Context Gathering
+**Location options:**
+- **Personal** (`~/.claude/stacks/`): Only you, works in any project
+- **Project** (`.claude/stacks/`): Checked into repo, shared with team
 
-**Use AskUserQuestion with these questions (one at a time):**
-
-| Question | Header | Options |
-|----------|--------|---------|
-| "What's your primary role?" | Role | Fullstack, Backend, Frontend, DevOps/SRE |
-| "What kind of task is this stack for?" | Task type | New feature, Bug fix, Code review, Deployment, Planning |
-
-### Phase 2: Pain Point Discovery
-
-| Question | Header | Options |
-|----------|--------|---------|
-| "What slows you down in your current workflow?" | Pain points | Forgetting steps, Manual repetition, Context switching, Quality issues |
-| "Which steps do you sometimes skip?" | Skipped steps | (multiSelect: true, derive from role) |
-
-### Phase 3: Workflow Building
-
-| Question | Header | Options |
-|----------|--------|---------|
-| "For [task type], what do you do first?" | First step | (derive from discovered skills) |
-| "After [previous step], what comes next?" | Next step | (filter by context) |
-| "Should any steps run in parallel?" | Parallel | Yes - show me how, No - keep sequential |
-| "Should this loop until something passes?" | Looping | Yes (test-fix cycle), No |
-
-### Phase 4: Refinement
-
-Show current steps first, then ask:
-
-| Question | Header | Options |
-|----------|--------|---------|
-| "What would you like to do?" | Refine | Add step, Remove step, Reorder, Looks good |
-| "How should transitions work?" | Transitions | Ask before each (prompt), Run automatically (auto), Mix |
-
-### Phase 5: Finalization
-
-**CRITICAL: Always ask for save location BEFORE saving. Never assume a default location.**
-
-| Question | Header | Options |
-|----------|--------|---------|
-| "What should we name this stack?" | Name | (suggest 2-3 names based on task type) |
-| "Where should I save '[name]' stack?" | Location | Personal (~/.claude/stacks/) - Available across all projects, Project (.claude/stacks/) - Shared with team via git |
-
-**Location options explained:**
-- **Personal**: `~/.claude/stacks/[name].yaml` - Only you can use it, works in any project
-- **Project**: `.claude/stacks/[name].yaml` - Checked into repo, shared with team
-
-After user confirms location, acknowledge their choice:
-```
-Saving to [chosen location]: [full path]
-```
+After confirmation: `Saving to [location]: [full path]`
 
 ## YAML Generation
 
@@ -146,118 +133,55 @@ steps:
   [Generated steps based on answers]
 ```
 
-## Mermaid Diagram Generation
+## Diagram & Checksum
 
-**Save diagram as separate file: `[name].diagram.md`**
+**Mermaid diagram:** Save as `[name].diagram.md` with flowchart TD format.
+- Node types: skill `[name\nskill:ref]`, bash `[name\ncmd]`, command `[name\n/cmd]`
+- Parallel: `subgraph [Parallel] ... end`
+- Loop: self-referencing edge
 
-```markdown
-# [Stack Name] Workflow
-
-```mermaid
-flowchart TD
-  [Generate nodes for each step]
-  [Generate subgraphs for parallel/loop]
-  [Generate edges with labels]
-`` `
-```
-
-**Node format by type:**
-- skill: `name[name\nskill:ref]`
-- bash: `name[name\ncmd]`
-- command: `name[name\n/cmd]`
-- parallel: `subgraph name [Parallel] ... end`
-- loop: `name[name]` with self-referencing edge
-
-## Checksum Generation
-
-After generating YAML content (excluding `_meta.checksum`):
-1. Compute SHA256 of content below `_meta` block
-2. Store as `_meta.checksum: sha256:[hash]`
+**Checksum:** Compute SHA256 of content below `_meta` block, store as `_meta.checksum: sha256:[hash]`
 
 ## Save and Confirm
 
-```bash
-# Create directory if needed
-mkdir -p ~/.claude/stacks  # or .claude/stacks
-
-# Write YAML file
-cat > [path]/[name].yaml << 'EOF'
-[Generated YAML]
-EOF
-
-# Write diagram file
-cat > [path]/[name].diagram.md << 'EOF'
-[Generated Mermaid markdown]
-EOF
-```
-
-**Confirm to user:**
+Save both files to the user-confirmed location, then confirm:
 ```
 Stack '[name]' saved to [path]
   - [name].yaml (workflow definition)
   - [name].diagram.md (visual flowchart)
 
-You can run it anytime with:
-  /stack [name]
-
-Or I'll suggest it when you're working on matching tasks.
+Run anytime with: /stack [name]
 ```
 
-**Then display the diagram inline for preview.**
+Display the diagram inline for preview.
 
 ## Edit Mode
 
-When editing an existing stack:
-
-1. Load and parse existing YAML
-2. Show current structure:
-   ```
-   Current '[name]' stack:
-
-   Steps:
-   1. [step-name] ([type]: [ref])
-   2. [step-name] ([type]: [ref])
-   ...
-
-   What would you like to change?
-   ```
-3. Options:
-   - Add a step
-   - Remove a step
-   - Reorder steps
-   - Change step settings
-   - Change defaults
-4. After changes, regenerate checksum and diagram file
-5. Save both .yaml and .diagram.md files
+1. Load existing YAML, show structure: `Steps: 1. [name] ([type]: [ref]) ...`
+2. Ask via AskUserQuestion: Add, Remove, Reorder, Change settings, Change defaults
+3. Regenerate checksum and diagram
+4. Save both files
 
 ## Validation Before Save
 
 Always invoke stack-validate skill before saving:
-- If errors -> show and help fix
-- If warnings -> show and ask to proceed
-- If valid -> save
+- Errors → show and help fix
+- Warnings → show and ask to proceed
+- Valid → save
 
 ## Guidelines
 
 - ONE question at a time via `AskUserQuestion` tool
-- Prefer multiple choice (easier to answer)
-- Show progress ("Step 3 of 5...")
-- Allow going back
-- Validate before saving
+- Prefer multiple choice, show progress ("Step 3 of 5...")
+- Allow going back, validate before saving
 - Always generate Mermaid diagram as separate .diagram.md file
 
 ## Red Flags - STOP
 
-If you catch yourself doing any of these, STOP and use `AskUserQuestion`:
-
 | Wrong | Right |
 |-------|-------|
-| Writing "Question 1:" as text | Use AskUserQuestion tool |
-| Listing options with bullet points | Use options array in tool |
-| Asking "Which do you prefer?" in prose | Use tool with header + options |
-| Batching multiple questions at once | One question per tool call |
-| Saving to ~/.claude/stacks/ without asking | Ask location first via tool |
-| Assuming personal or project location | Always confirm with user |
+| Plain text questions | Use AskUserQuestion tool |
+| Batching multiple questions | One question per tool call |
+| Saving without asking location | Ask location first via tool |
 
 **Plain text questions = skill violation. Always use the tool.**
-**Saving without location confirmation = skill violation. Always ask first.**

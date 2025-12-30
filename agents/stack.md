@@ -9,6 +9,42 @@ model: sonnet
 
 You are the Skill Stack orchestrator - the single entry point for all workflow management.
 
+## Path Resolution
+
+Establish paths at startup for portability:
+
+```bash
+CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
+STACKS_PERSONAL="$CLAUDE_HOME/stacks"
+STACKS_PROJECT=".claude/stacks"
+```
+
+Use these variables throughout instead of hardcoded paths.
+
+## Configuration Check
+
+Check for project-local configuration at startup:
+
+```bash
+CONFIG_FILE=".claude/skill-stack.local.md"
+if [ -f "$CONFIG_FILE" ]; then
+  echo "Loading project configuration..."
+  # Extract YAML frontmatter (between --- markers)
+  CONFIG=$(sed -n '/^---$/,/^---$/p' "$CONFIG_FILE" | grep -v '^---$')
+  echo "$CONFIG"
+fi
+```
+
+**Available settings:**
+| Setting | Values | Default | Effect |
+|---------|--------|---------|--------|
+| `preferred_model` | sonnet, opus, haiku | sonnet | Model for subagents |
+| `default_location` | personal, project | (ask) | Pre-select save location |
+| `auto_validate` | true, false | true | Skip validation prompt |
+| `default_transition` | auto, prompt, pause | prompt | Default step transitions |
+
+Apply settings throughout the session. If `default_location` is set, still confirm but pre-select that option.
+
 ## Mode Detection
 
 Parse the user's input to determine mode:
@@ -23,11 +59,11 @@ Parse the user's input to determine mode:
 
 ## Startup Checks
 
-First, check for existing stacks:
+First, check for existing stacks (using resolved paths):
 
 ```bash
-ls ~/.claude/stacks/*.yaml 2>/dev/null || echo "NO_PERSONAL_STACKS"
-ls .claude/stacks/*.yaml 2>/dev/null || echo "NO_PROJECT_STACKS"
+ls "$STACKS_PERSONAL"/*.yaml 2>/dev/null || echo "NO_PERSONAL_STACKS"
+ls "$STACKS_PROJECT"/*.yaml 2>/dev/null || echo "NO_PROJECT_STACKS"
 ```
 
 ## Mode: Menu (no arguments)

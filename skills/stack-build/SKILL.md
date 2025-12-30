@@ -80,22 +80,95 @@ Store discovery results for reference during building. The `/skills` command pro
 
 **CRITICAL:** Use `AskUserQuestion` tool for ALL questions. Never plain text. One question at a time.
 
-### Phases (All Questions via AskUserQuestion)
+### Phase 1: Context Gathering
 
-| Phase | Question | Header | Options |
-|-------|----------|--------|---------|
-| **1. Context** | "What's your primary role?" | Role | Fullstack, Backend, Frontend, DevOps/SRE |
-| | "What kind of task is this stack for?" | Task type | New feature, Bug fix, Code review, Deployment, Planning |
-| **2. Pain Points** | "What slows you down?" | Pain points | Forgetting steps, Manual repetition, Context switching, Quality issues |
-| | "Which steps do you sometimes skip?" | Skipped | (multiSelect: true, derive from role) |
-| **3. Workflow** | "For [task], what do you do first?" | First step | (from discovered skills) |
-| | "After [step], what comes next?" | Next step | (filter by context) |
-| | "Should any steps run in parallel?" | Parallel | Yes, No |
-| | "Should this loop until something passes?" | Looping | Yes, No |
-| **4. Refinement** | "What would you like to do?" | Refine | Add step, Remove step, Reorder, Looks good |
-| | "How should transitions work?" | Transitions | prompt, auto, Mix |
-| **5. Finalize** | "What should we name this stack?" | Name | (suggest 2-3 names) |
-| | "Where should I save '[name]'?" | Location | Personal, Project |
+| Question | Header | Options |
+|----------|--------|---------|
+| "What's your primary role?" | Role | Fullstack, Backend, Frontend, DevOps/SRE |
+| "What kind of task is this stack for?" | Task type | New feature, Bug fix, Code review, Deployment, Planning |
+
+### Phase 2: Pain Points
+
+| Question | Header | Options |
+|----------|--------|---------|
+| "What slows you down?" | Pain points | Forgetting steps, Manual repetition, Context switching, Quality issues |
+| "Which steps do you sometimes skip?" | Skipped | (multiSelect: true, derive from role) |
+
+### Phase 3: Intelligent Skill Suggestion
+
+**After gathering context, analyze and suggest relevant skills:**
+
+#### Skill Mapping by Task Type
+
+| Task Type | Recommended Skills | Reasoning |
+|-----------|-------------------|-----------|
+| **New feature** | brainstorming → writing-plans → test-driven-development → verification-before-completion | Creative exploration, then structured implementation |
+| **Bug fix** | systematic-debugging → test-driven-development → verification-before-completion | Investigate first, then fix with tests |
+| **Code review** | requesting-code-review → receiving-code-review → verification-before-completion | Review cycle with verification |
+| **Deployment** | verification-before-completion → finishing-a-development-branch | Verify then ship |
+| **Planning** | brainstorming → writing-plans | Explore then document |
+
+#### Skill Mapping by Role
+
+| Role | Additional Skills to Suggest |
+|------|------------------------------|
+| **Fullstack** | frontend-design, test-driven-development |
+| **Backend** | systematic-debugging, test-driven-development |
+| **Frontend** | frontend-design, wcag-verify |
+| **DevOps/SRE** | devops, verification-before-completion |
+
+#### Skill Mapping by Pain Point
+
+| Pain Point | Skills to Prioritize |
+|------------|---------------------|
+| **Forgetting steps** | verification-before-completion, dev-verify |
+| **Quality issues** | test-quality-verify, wcag-verify, dev-verify |
+| **Context switching** | writing-plans, executing-plans |
+| **Manual repetition** | dispatching-parallel-agents, subagent-driven-development |
+
+#### Suggestion Algorithm
+
+1. **Start with task type mapping** → Get base workflow
+2. **Augment with role-specific skills** → Add relevant extras
+3. **Prioritize by pain points** → Emphasize what user struggles with
+4. **Filter by discovered skills** → Only suggest what's available
+5. **Present as recommended workflow** with option to customize
+
+**Present suggestion:**
+```
+Based on your context (Backend developer, Bug fix, Quality issues):
+
+Recommended workflow:
+1. systematic-debugging - Investigate the issue
+2. test-driven-development - Write test, then fix
+3. test-quality-verify - Ensure tests are meaningful
+4. verification-before-completion - Final checks
+
+Would you like to use this workflow, or customize it?
+```
+
+### Phase 4: Workflow Building
+
+| Question | Header | Options |
+|----------|--------|---------|
+| "Use recommended workflow or customize?" | Workflow | Use recommended, Customize from scratch, Modify recommended |
+| "After [step], what comes next?" | Next step | (filtered by context) |
+| "Should any steps run in parallel?" | Parallel | Yes, No |
+| "Should this loop until something passes?" | Looping | Yes, No |
+
+### Phase 5: Refinement
+
+| Question | Header | Options |
+|----------|--------|---------|
+| "What would you like to do?" | Refine | Add step, Remove step, Reorder, Looks good |
+| "How should transitions work?" | Transitions | prompt, auto, Mix |
+
+### Phase 6: Finalize
+
+| Question | Header | Options |
+|----------|--------|---------|
+| "What should we name this stack?" | Name | (suggest 2-3 names based on task type) |
+| "Where should I save '[name]'?" | Location | Personal, Project |
 
 **Location options:**
 - **Personal** (`~/.claude/stacks/`): Only you, works in any project

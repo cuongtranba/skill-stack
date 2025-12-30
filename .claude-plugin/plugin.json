@@ -1,7 +1,7 @@
 {
   "name": "skill-stack",
   "description": "Build and run personalized skill workflows through Socratic guidance",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "skill-stack-team"
   },

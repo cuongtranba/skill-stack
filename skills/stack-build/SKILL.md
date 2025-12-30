@@ -147,21 +147,129 @@ Recommended workflow:
 Would you like to use this workflow, or customize it?
 ```
 
+### Phase 3b: Create Custom Skill or Command (When No Match)
+
+**Trigger:** When user needs a step that doesn't exist in discovered skills/commands.
+
+| Question | Header | Options |
+|----------|--------|---------|
+| "No matching skill found. Would you like to create one?" | Create | Create custom skill, Create custom command, Skip this step, Describe what you need |
+
+#### Creating a Custom Skill
+
+Guide through minimal viable skill creation:
+
+| Question | Header | Purpose |
+|----------|--------|---------|
+| "What should this skill be called?" | Name | kebab-case identifier |
+| "Briefly describe what this skill does" | Description | Trigger phrases and purpose |
+| "What should Claude do when this skill is invoked?" | Instructions | Core behavior (2-5 sentences) |
+
+**Generate skill file:**
+
+```bash
+CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
+SKILL_NAME="[user-provided-name]"
+mkdir -p "$CLAUDE_HOME/skills/$SKILL_NAME"
+```
+
+```markdown
+# Save to ~/.claude/skills/[name]/SKILL.md
+---
+name: [skill-name]
+description: [user-provided-description]
+---
+
+# [Skill Name]
+
+[User-provided instructions]
+
+## Guidelines
+
+- Follow the instructions above
+- Ask for clarification if needed
+- Report completion when done
+```
+
+**Confirm creation:**
+```
+Created skill '[name]' at ~/.claude/skills/[name]/SKILL.md
+
+You can now use it in your workflow or invoke directly.
+```
+
+#### Creating a Custom Command
+
+Guide through minimal command creation:
+
+| Question | Header | Purpose |
+|----------|--------|---------|
+| "What should this command be called?" | Name | kebab-case identifier |
+| "Briefly describe what this command does" | Description | For /help listing |
+| "What should Claude do when this command runs?" | Instructions | Core behavior |
+
+**Generate command file:**
+
+```markdown
+# Save to ~/.claude/commands/[name].md
+---
+description: [user-provided-description]
+---
+
+[User-provided instructions]
+```
+
+**Confirm creation:**
+```
+Created command '/[name]' at ~/.claude/commands/[name].md
+
+You can now use it in your workflow or run directly with /[name].
+```
+
+#### "Describe What You Need" Option
+
+If user selects "Describe what you need":
+
+1. Ask: "What do you want this step to accomplish?"
+2. Analyze the description
+3. Check if any existing skill/command could work (fuzzy match)
+4. If match found → suggest it
+5. If no match → offer to create custom skill/command with pre-filled content based on description
+
+**Example flow:**
+```
+User: "I need something to check our API response times"
+
+Analysis: No direct match found.
+
+Suggested custom skill:
+  Name: api-performance-check
+  Description: Check API response times and identify slow endpoints
+  Instructions: Run API performance tests, measure response times,
+                report any endpoints exceeding thresholds.
+
+Create this skill? [Yes / Modify / No]
+```
+
 ### Phase 4: Workflow Building
 
 | Question | Header | Options |
 |----------|--------|---------|
 | "Use recommended workflow or customize?" | Workflow | Use recommended, Customize from scratch, Modify recommended |
-| "After [step], what comes next?" | Next step | (filtered by context) |
+| "After [step], what comes next?" | Next step | (filtered by context + "Create new skill/command" option) |
 | "Should any steps run in parallel?" | Parallel | Yes, No |
 | "Should this loop until something passes?" | Looping | Yes, No |
+
+**When user selects "Create new skill/command"** → Go to Phase 3b, then return.
 
 ### Phase 5: Refinement
 
 | Question | Header | Options |
 |----------|--------|---------|
-| "What would you like to do?" | Refine | Add step, Remove step, Reorder, Looks good |
+| "What would you like to do?" | Refine | Add step, Remove step, Reorder, Create custom step, Looks good |
 | "How should transitions work?" | Transitions | prompt, auto, Mix |
+
+**When user selects "Create custom step"** → Go to Phase 3b to create skill/command, then add to workflow.
 
 ### Phase 6: Finalize
 

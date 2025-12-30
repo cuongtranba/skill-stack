@@ -165,16 +165,15 @@ Guide through minimal viable skill creation:
 | "Briefly describe what this skill does" | Description | Trigger phrases and purpose |
 | "What should Claude do when this skill is invoked?" | Instructions | Core behavior (2-5 sentences) |
 
-**Generate skill file:**
+**Generate skill file (saved to local repository):**
 
 ```bash
-CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
 SKILL_NAME="[user-provided-name]"
-mkdir -p "$CLAUDE_HOME/skills/$SKILL_NAME"
+mkdir -p ".claude/skills/$SKILL_NAME"
 ```
 
 ```markdown
-# Save to ~/.claude/skills/[name]/SKILL.md
+# Save to .claude/skills/[name]/SKILL.md (project-local)
 ---
 name: [skill-name]
 description: [user-provided-description]
@@ -193,9 +192,11 @@ description: [user-provided-description]
 
 **Confirm creation:**
 ```
-Created skill '[name]' at ~/.claude/skills/[name]/SKILL.md
+Created skill '[name]' at .claude/skills/[name]/SKILL.md
 
-You can now use it in your workflow or invoke directly.
+This skill is saved in your project repository and can be:
+- Shared with your team via git
+- Used in any workflow in this project
 ```
 
 #### Creating a Custom Command
@@ -208,10 +209,10 @@ Guide through minimal command creation:
 | "Briefly describe what this command does" | Description | For /help listing |
 | "What should Claude do when this command runs?" | Instructions | Core behavior |
 
-**Generate command file:**
+**Generate command file (saved to local repository):**
 
 ```markdown
-# Save to ~/.claude/commands/[name].md
+# Save to .claude/commands/[name].md (project-local)
 ---
 description: [user-provided-description]
 ---
@@ -221,9 +222,11 @@ description: [user-provided-description]
 
 **Confirm creation:**
 ```
-Created command '/[name]' at ~/.claude/commands/[name].md
+Created command '/[name]' at .claude/commands/[name].md
 
-You can now use it in your workflow or run directly with /[name].
+This command is saved in your project repository and can be:
+- Shared with your team via git
+- Run with /[name] in this project
 ```
 
 #### "Describe What You Need" Option

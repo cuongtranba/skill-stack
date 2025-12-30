@@ -60,43 +60,70 @@ flowchart LR
 
 ## Building a Stack
 
-When you run `/stack build`, the builder guides you through questions:
+When you run `/stack build`, the builder guides you through questions with **intelligent skill suggestions**:
 
 ```
 > /stack build
 
-What kind of workflow are you building?
-1. Feature development
-2. Bug fixing
-3. Code review
-4. Custom
+What's your primary role?
+→ Backend developer
 
-> 1
+What kind of task is this stack for?
+→ Bug fix
 
-Which skills should run first?
-1. brainstorming
-2. write-plan
-3. tdd
-4. Other
+What slows you down?
+→ Quality issues
 
-> 1, 2
+Based on your context (Backend developer, Bug fix, Quality issues):
 
-Should backend and frontend run in parallel or sequential?
-1. Parallel (faster, uses subagents)
-2. Sequential (simpler)
+Recommended workflow:
+1. systematic-debugging - Investigate the issue
+2. test-driven-development - Write test, then fix
+3. test-quality-verify - Ensure tests are meaningful
+4. verification-before-completion - Final checks
 
-> 1
+Use this workflow or customize?
+→ Use recommended
 
-...
+Where should I save 'bug-fix' stack?
+→ Project (.claude/stacks/)
 
-Where should I save 'my-feature' stack?
-1. Personal (~/.claude/stacks/) - Available across all projects
-2. Project (.claude/stacks/) - Shared with team via git
-
-> 1
-
-✓ Stack saved to ~/.claude/stacks/my-feature.yaml
+✓ Stack saved to .claude/stacks/bug-fix.yaml
 ```
+
+### Intelligent Suggestions
+
+The builder analyzes your context and suggests relevant skills:
+
+| Context | Suggested Skills |
+|---------|------------------|
+| **New feature** | brainstorming → writing-plans → test-driven-development → verification |
+| **Bug fix** | systematic-debugging → test-driven-development → verification |
+| **Code review** | requesting-code-review → receiving-code-review → verification |
+| **Frontend role** | frontend-design, wcag-verify |
+| **Quality issues** | test-quality-verify, dev-verify |
+
+### Custom Skill Creation
+
+When no existing skill matches your needs, create one on-the-fly:
+
+```
+No matching skill found. Would you like to create one?
+→ Create custom skill
+
+What should this skill be called?
+→ api-performance-check
+
+Briefly describe what this skill does:
+→ Check API response times and identify slow endpoints
+
+What should Claude do when this skill is invoked?
+→ Run API performance tests, measure response times, report slow endpoints
+
+✓ Created skill 'api-performance-check' at .claude/skills/api-performance-check/SKILL.md
+```
+
+Custom skills are saved to your **project repository** (`.claude/skills/`) so they can be shared with your team via git.
 
 No YAML knowledge required. The builder creates valid workflows from your answers.
 

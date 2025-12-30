@@ -87,27 +87,22 @@ Common issues:
 
 ### 2. Reference Validation
 
-```bash
-# Set base path
-CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
+**Use `/skills` command for reliable skill validation:**
+
+Run `/skills` to get the authoritative list of available skills, then check each skill ref in the stack against this list.
+
+```
+/skills
 ```
 
-**Check skill refs exist:**
-```bash
-# For each skill ref in stack
-ref="superpowers:brainstorming"
-plugin=$(echo "$ref" | cut -d: -f1)
-skill=$(echo "$ref" | cut -d: -f2)
-
-# Check plugin skills
-ls "$CLAUDE_HOME/plugins/cache/$plugin"/*/skills/"$skill"/SKILL.md 2>/dev/null
-
-# Check personal skills
-ls "$CLAUDE_HOME/skills/$skill/SKILL.md" 2>/dev/null
-```
+For each skill ref in the stack (e.g., `superpowers:brainstorming`):
+1. Parse the output of `/skills`
+2. Match against `name (source)` format
+3. If not found, suggest similar names using fuzzy matching
 
 **Check command refs exist:**
 ```bash
+CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
 # For each command ref
 ls "$CLAUDE_HOME/commands/$ref.md" 2>/dev/null
 ```

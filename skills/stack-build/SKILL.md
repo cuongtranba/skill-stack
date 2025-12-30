@@ -15,37 +15,38 @@ Guide users through creating skill workflow stacks via Socratic questioning.
 
 ## Discovery Phase
 
-**First, discover available resources with explicit error handling:**
+**Use Claude Code's built-in `/skills` command for reliable skill discovery:**
+
+### Step 1: Discover Skills (Primary Method)
+
+Run the `/skills` command to get all available skills:
+
+```
+/skills
+```
+
+This returns a complete list with:
+- Skill name
+- Description
+- Source (user/project/plugin)
+
+**Example output:**
+```
+Available Skills:
+  brainstorming (plugin:superpowers)
+    Explore ideas and requirements before implementation
+
+  test-driven-development (plugin:superpowers)
+    Write tests first, then implementation
+
+  my-custom-skill (user)
+    Project-specific workflow helper
+```
+
+### Step 2: Discover Commands and Stacks
 
 ```bash
-# Set base paths
 CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
-
-echo "=== Discovering Resources ==="
-
-# Personal skills
-echo "Personal skills:"
-if [ -d "$CLAUDE_HOME/skills" ] && ls "$CLAUDE_HOME/skills"/*/SKILL.md >/dev/null 2>&1; then
-  for f in "$CLAUDE_HOME/skills"/*/SKILL.md; do
-    name=$(dirname "$f" | xargs basename)
-    desc=$(grep -A1 "^description:" "$f" 2>/dev/null | tail -1 | head -c 50)
-    echo "  - $name: $desc"
-  done
-else
-  echo "  (none found)"
-fi
-
-# Plugin skills
-echo "Plugin skills:"
-if ls "$CLAUDE_HOME/plugins/cache"/*/*/skills/*/SKILL.md >/dev/null 2>&1; then
-  for f in "$CLAUDE_HOME/plugins/cache"/*/*/skills/*/SKILL.md; do
-    plugin=$(echo "$f" | sed 's|.*/cache/\([^/]*\)/.*|\1|')
-    name=$(dirname "$f" | xargs basename)
-    echo "  - $plugin:$name"
-  done
-else
-  echo "  (none found)"
-fi
 
 # Commands
 echo "Commands:"
@@ -71,11 +72,9 @@ if [ -d ".claude/stacks" ] && ls .claude/stacks/*.yaml >/dev/null 2>&1; then
   found_stacks=1
 fi
 [ $found_stacks -eq 0 ] && echo "  (none found)"
-
-echo "=== Discovery Complete ==="
 ```
 
-Store discovery results for reference during building. If discovery finds no resources, inform the user but continue - they can still build a stack with manually specified references.
+Store discovery results for reference during building. The `/skills` command provides the most reliable and complete list of available skills across all sources (user, project, plugin).
 
 ## Socratic Flow
 

@@ -1,6 +1,6 @@
 ---
 name: wcag-verify
-description: WCAG 2.1 A/AA accessibility reviewer for frontend code. Use when (1) reviewing HTML/JSX/TSX/Vue/Svelte/CSS files for accessibility, (2) user asks to check accessibility or contrast, (3) auditing UI components for WCAG compliance, or (4) reviewing uncommitted/staged changes for a11y issues.
+description: WCAG 2.1 A/AA accessibility reviewer for frontend code. Use when (1) generating or modifying frontend UI components, (2) creating or editing design tokens, color palettes, or theme colors, (3) reviewing HTML/JSX/TSX/Vue/Svelte/CSS files, (4) user asks to check accessibility or contrast, or (5) reviewing uncommitted/staged changes for a11y issues.
 ---
 
 # WCAG Verify

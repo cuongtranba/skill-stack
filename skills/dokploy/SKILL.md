@@ -1,0 +1,210 @@
+---
+name: dokploy
+description: Deploy and manage applications on Dokploy. Use when user wants to deploy, redeploy, debug deployments, check status, view logs, or configure Dokploy settings. Triggers on "deploy", "redeploy", "dokploy", "push to production", "publish app", "deployment status", "deployment logs".
+---
+
+# Dokploy Deployment Skill
+
+Manage application deployments on a self-hosted Dokploy instance.
+
+## Configuration
+
+Config file: `.dokploy.json` in project root.
+
+```json
+{
+  "api_endpoint": "https://example.com/api",
+  "api_key": "your-api-key",
+  "domain_base": "example.com",
+  "app_name": "my-app",
+  "project_id": null,
+  "environment_id": null,
+  "application_id": null,
+  "domain_id": null
+}
+```
+
+### Config Resolution
+
+1. Read `.dokploy.json` from project root
+2. If missing or `api_key` is null → run **Setup Flow**
+3. If `application_id` is present → app already provisioned (skip to deploy/redeploy)
+
+## Bash Tool Constraints — CRITICAL
+
+The Bash tool breaks curl in two ways. Both cause `curl: option : blank argument where content is expected`.
+
+- **NEVER** use shell variables for API key or endpoint values
+- **NEVER** use backslash line continuations (`\`) in curl commands
+
+**The ONLY correct pattern — everything on ONE line, values inlined:**
+
+```bash
+curl -s "https://example.com/api/application.one?applicationId=abc" -H "x-api-key: ACTUAL_KEY_HERE"
+```
+
+```bash
+curl -s -X POST "https://example.com/api/application.deploy" -H "Content-Type: application/json" -H "x-api-key: ACTUAL_KEY_HERE" -d '{"applicationId":"abc"}'
+```
+
+When piping, keep curl on one line before the pipe:
+
+```bash
+curl -s "https://example.com/api/project.all" -H "x-api-key: ACTUAL_KEY_HERE" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin),indent=2))"
+```
+
+**Always read `api_endpoint` and `api_key` from `.dokploy.json` and inline them directly into curl commands.**
+
+## Action Routing
+
+Detect user intent and route:
+
+| User says | Action |
+|-----------|--------|
+| "deploy", "deploy to dokploy", "push to production" | **Deploy Flow** |
+| "redeploy", "redeploy {name}" | **Redeploy Flow** |
+| "deployment status", "check deploy" | **Status Flow** |
+| "deployment logs", "debug deployment" | **Debug Flow** |
+| "configure dokploy", "set api key" | **Setup Flow** |
+
+## Setup Flow
+
+Prompt user for Dokploy connection details:
+
+1. **API endpoint** — The Dokploy instance URL (e.g., `https://dokploy.example.com/api`)
+2. **API key** — Generate from Dokploy dashboard → Settings → API
+3. **Domain base** — Base domain for subdomains (e.g., `example.com` → `{app}.example.com`)
+
+Validate the connection:
+
+```bash
+curl -s "https://ENDPOINT/api/project.all" -H "x-api-key: API_KEY"
+```
+
+If valid response → write `.dokploy.json` with the provided values. If error → show the error message and ask user to verify credentials.
+
+Add `.dokploy.json` to `.gitignore` if not already present (it contains secrets).
+
+## Deploy Flow
+
+### Step 1: Load Config
+
+Read `.dokploy.json`. If missing or no `api_key` → run Setup Flow first.
+
+### Step 2: Validate Prerequisites
+
+```bash
+git remote get-url origin
+```
+
+If no remote → stop: "Push your code to GitHub first: `git remote add origin <url> && git push -u origin main`"
+
+Extract `owner` and `repo` from remote URL. Detect branch with `git branch --show-current`.
+
+### Step 3: Prompt for App Name
+
+If `app_name` not in config, ask:
+
+```
+What should this deployment be called?
+(Will be available at {name}.{domain_base})
+```
+
+Validate: lowercase, alphanumeric, hyphens only. Save to config.
+
+### Step 4: Ensure Dockerfile Exists
+
+Check for `Dockerfile` and `nginx.conf` in project root. If missing, generate them.
+See [references/dockerfile-templates.md](references/dockerfile-templates.md) for templates.
+
+### Step 5: Create Project
+
+```bash
+curl -s -X POST "{api_endpoint}/project.create" -H "Content-Type: application/json" -H "x-api-key: {api_key}" -d '{"name":"{app_name}","description":"Deployed via Claude skill"}'
+```
+
+Save `projectId` AND `environmentId` from response to config. Both are required.
+
+If project exists (error) → fetch with `project.all`, find by name, extract both IDs.
+
+### Step 6: Create Application
+
+```bash
+curl -s -X POST "{api_endpoint}/application.create" -H "Content-Type: application/json" -H "x-api-key: {api_key}" -d '{"name":"{app_name}","projectId":"{project_id}","environmentId":"{environment_id}","description":"Auto-deployed from GitHub"}'
+```
+
+Save `applicationId` to config. `environmentId` is REQUIRED — extract from Step 5.
+
+### Step 7: Configure Source & Build
+
+```bash
+curl -s -X POST "{api_endpoint}/application.update" -H "Content-Type: application/json" -H "x-api-key: {api_key}" -d '{"applicationId":"{application_id}","sourceType":"github","repository":"{repo}","owner":"{owner}","branch":"{branch}","buildType":"dockerfile","dockerfile":"Dockerfile"}'
+```
+
+### Step 8: Configure Domain
+
+```bash
+curl -s -X POST "{api_endpoint}/domain.create" -H "Content-Type: application/json" -H "x-api-key: {api_key}" -d '{"applicationId":"{application_id}","host":"{app_name}.{domain_base}","https":true,"certificateType":"letsencrypt","port":80}'
+```
+
+**CRITICAL:** Always set `https: true`, `certificateType: "letsencrypt"`, `port: 80`. Without these → 526 SSL error with Cloudflare.
+
+Save `domainId` to config. If domain exists without HTTPS, fix with `domain.update`. See [references/api-reference.md](references/api-reference.md).
+
+### Step 9: Trigger Deploy
+
+```bash
+curl -s -X POST "{api_endpoint}/application.deploy" -H "Content-Type: application/json" -H "x-api-key: {api_key}" -d '{"applicationId":"{application_id}"}'
+```
+
+### Step 10: Verify & Report
+
+Poll `application.one` for status. Report:
+
+```
+Deployed successfully!
+URL: https://{app_name}.{domain_base}
+Dashboard: {api_endpoint} (remove /api)
+To redeploy after changes, push to GitHub or say "redeploy"
+```
+
+**After successful deploy, write all IDs back to `.dokploy.json`.**
+
+## Redeploy Flow
+
+1. Load config — requires `application_id` in `.dokploy.json`
+2. If no `application_id` → run full Deploy Flow instead
+3. Trigger deploy: `POST {api_endpoint}/application.deploy`
+4. Poll status and report
+
+## Status Flow
+
+1. Load config — requires `application_id`
+2. Fetch: `GET {api_endpoint}/application.one?applicationId={application_id}`
+3. Report: `applicationStatus`, last deployment status, domain URL
+
+## Debug Flow
+
+1. Load config — requires `application_id`
+2. Fetch application details from `application.one`
+3. Check and report:
+   - `applicationStatus` (idle/done/error)
+   - Latest deployment status and error messages
+   - Domain configuration (HTTPS enabled?)
+   - Source configuration (correct repo/branch?)
+4. If 526 SSL error → fix domain with `domain.update` adding `https: true` and `certificateType: "letsencrypt"`
+5. Link to Dokploy dashboard for full logs
+
+## Error Handling
+
+- **No config**: Run Setup Flow
+- **No git remote**: Tell user to push to GitHub first
+- **API errors**: Show error message from Dokploy response
+- **App name taken**: Suggest suffix like `-2` or ask for new name
+- **526 SSL error**: Auto-fix domain with `domain.update`
+- **Deploy failure**: Check `application.one`, link to dashboard for logs
+
+## References
+
+- [API Reference](references/api-reference.md) — All Dokploy API endpoints and curl patterns
+- [Dockerfile Templates](references/dockerfile-templates.md) — Dockerfile, nginx.conf, .dockerignore templates

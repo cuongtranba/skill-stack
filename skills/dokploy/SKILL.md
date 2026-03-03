@@ -7,6 +7,20 @@ description: Deploy and manage applications on Dokploy. Use when user wants to d
 
 Manage application deployments on a self-hosted Dokploy instance.
 
+## Golden Rule: API for Changes, SSH for Verification
+
+Every change to Dokploy — creating projects, deploying applications, updating domains, configuring build settings — goes through the Dokploy API. The API is the single source of truth for mutations.
+
+Server access (SSH, docker exec, direct file edits on the server) is only for **reading state** when debugging: checking container logs, verifying nginx configs, inspecting disk space, confirming a deploy actually landed. If you find yourself wanting to `ssh` into the server to fix something, stop — find the API call that makes that change instead.
+
+Why this matters: API changes are tracked, reversible, and consistent with Dokploy's internal state. Direct server edits bypass Dokploy's awareness, causing state drift where the dashboard shows one thing but the server does another. That drift is the #1 source of mysterious deployment failures.
+
+**In practice:**
+- Creating/updating apps, domains, builds → API calls (`application.create`, `domain.update`, etc.)
+- Triggering deploys → API call (`application.deploy`)
+- Checking why a deploy failed → SSH to read logs, then fix via API
+- "The SSL cert isn't working" → `domain.update` via API, not editing nginx on the server
+
 ## Configuration
 
 Config file: `.dokploy.json` in project root.
@@ -185,6 +199,8 @@ To redeploy after changes, push to GitHub or say "redeploy"
 
 ## Debug Flow
 
+Use SSH/server access here to **diagnose**, then fix via API. Never edit server files directly to resolve issues.
+
 1. Load config — requires `application_id`
 2. Fetch application details from `application.one`
 3. Check and report:
@@ -192,8 +208,9 @@ To redeploy after changes, push to GitHub or say "redeploy"
    - Latest deployment status and error messages
    - Domain configuration (HTTPS enabled?)
    - Source configuration (correct repo/branch?)
-4. If 526 SSL error → fix domain with `domain.update` adding `https: true` and `certificateType: "letsencrypt"`
-5. Link to Dokploy dashboard for full logs
+4. If deeper investigation needed → SSH to read container logs, check nginx config, verify port bindings
+5. Apply any fix through the API (e.g., 526 SSL error → `domain.update` with `https: true` and `certificateType: "letsencrypt"`)
+6. Link to Dokploy dashboard for full logs
 
 ## Error Handling
 

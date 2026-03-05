@@ -29,6 +29,9 @@ Config file: `.dokploy.json` in project root.
 {
   "api_endpoint": "https://example.com/api",
   "api_key": "your-api-key",
+  "username": "admin@example.com",
+  "password": "user-password",
+  "token": null,
   "domain_base": "example.com",
   "app_name": "my-app",
   "project_id": null,
@@ -41,8 +44,17 @@ Config file: `.dokploy.json` in project root.
 ### Config Resolution
 
 1. Read `.dokploy.json` from project root
-2. If missing or `api_key` is null → run **Setup Flow**
+2. If missing or no auth credentials → run **Setup Flow**
 3. If `application_id` is present → app already provisioned (skip to deploy/redeploy)
+
+### Auth Resolution
+
+When making any API call, resolve authentication in this order:
+
+1. `token` exists → use `Authorization: Bearer {token}` header
+2. Token is null or API returns 401 → have `username`/`password` → run **Login Flow** to get new token → update config
+3. No `username`/`password` → fallback to `api_key` with `x-api-key` header
+4. No credentials at all → run **Setup Flow**
 
 ## Bash Tool Constraints — CRITICAL
 
@@ -53,21 +65,29 @@ The Bash tool breaks curl in two ways. Both cause `curl: option : blank argument
 
 **The ONLY correct pattern — everything on ONE line, values inlined:**
 
+With token auth:
+
 ```bash
-curl -s "https://example.com/api/application.one?applicationId=abc" -H "x-api-key: ACTUAL_KEY_HERE"
+curl -s "https://example.com/api/application.one?applicationId=abc" -H "Authorization: Bearer ACTUAL_TOKEN_HERE"
 ```
 
 ```bash
-curl -s -X POST "https://example.com/api/application.deploy" -H "Content-Type: application/json" -H "x-api-key: ACTUAL_KEY_HERE" -d '{"applicationId":"abc"}'
+curl -s -X POST "https://example.com/api/application.deploy" -H "Content-Type: application/json" -H "Authorization: Bearer ACTUAL_TOKEN_HERE" -d '{"applicationId":"abc"}'
+```
+
+With API key fallback:
+
+```bash
+curl -s "https://example.com/api/application.one?applicationId=abc" -H "x-api-key: ACTUAL_KEY_HERE"
 ```
 
 When piping, keep curl on one line before the pipe:
 
 ```bash
-curl -s "https://example.com/api/project.all" -H "x-api-key: ACTUAL_KEY_HERE" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin),indent=2))"
+curl -s "https://example.com/api/project.all" -H "Authorization: Bearer ACTUAL_TOKEN_HERE" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin),indent=2))"
 ```
 
-**Always read `api_endpoint` and `api_key` from `.dokploy.json` and inline them directly into curl commands.**
+**Always read auth credentials from `.dokploy.json` and inline them directly into curl commands. Use token (Bearer) when available, fall back to api_key (x-api-key).**
 
 ## Action Routing
 
@@ -80,16 +100,26 @@ Detect user intent and route:
 | "deployment status", "check deploy" | **Status Flow** |
 | "deployment logs", "debug deployment" | **Debug Flow** |
 | "configure dokploy", "set api key" | **Setup Flow** |
+| "login to dokploy" | **Login Flow** |
+| "refresh api", "check swagger", "api docs" | **Swagger Fetch** |
 
 ## Setup Flow
 
 Prompt user for Dokploy connection details:
 
 1. **API endpoint** — The Dokploy instance URL (e.g., `https://dokploy.example.com/api`)
-2. **API key** — Generate from Dokploy dashboard → Settings → API
+2. **Auth method** — Ask: "Do you want to authenticate with username/password or API key?"
+   - **Username/Password**: Ask for email and password → run Login Flow → store credentials + token
+   - **API Key**: Ask for key (generate from Dokploy dashboard → Settings → API)
 3. **Domain base** — Base domain for subdomains (e.g., `example.com` → `{app}.example.com`)
 
-Validate the connection:
+Validate the connection (use whichever auth is available):
+
+```bash
+curl -s "https://ENDPOINT/api/project.all" -H "Authorization: Bearer TOKEN"
+```
+
+or with API key:
 
 ```bash
 curl -s "https://ENDPOINT/api/project.all" -H "x-api-key: API_KEY"
@@ -98,6 +128,41 @@ curl -s "https://ENDPOINT/api/project.all" -H "x-api-key: API_KEY"
 If valid response → write `.dokploy.json` with the provided values. If error → show the error message and ask user to verify credentials.
 
 Add `.dokploy.json` to `.gitignore` if not already present (it contains secrets).
+
+## Login Flow
+
+Authenticate with username/password to obtain a bearer token.
+
+```bash
+curl -s -X POST "{base_url}/api/auth.login" -H "Content-Type: application/json" -d '{"email":"{username}","password":"{password}"}'
+```
+
+- **Success**: Extract token from response → save `token` to `.dokploy.json`
+- **Failure**: Show error message → ask user to re-enter credentials
+- **Auto re-login**: When any API call returns 401 (unauthorized), automatically re-login using stored `username`/`password` without prompting user. If re-login also fails → ask user to update credentials.
+
+## Swagger Fetch (On-Demand)
+
+When the skill needs an API endpoint not documented in `references/api-reference.md`, fetch the Swagger spec dynamically.
+
+**When to trigger:**
+- Skill encounters an action it doesn't have a hardcoded endpoint for
+- User requests an operation not covered by existing flows
+- User says "refresh api", "check swagger", or "api docs"
+
+**How to fetch:**
+
+```bash
+curl -s "{base_url}/swagger/json" -H "Authorization: Bearer {token}"
+```
+
+If that path returns an error, try alternatives: `/api-json`, `/swagger-json`, `/swagger/doc`.
+
+**How to use:**
+- Read the Swagger JSON directly in conversation context
+- Find the relevant endpoint, method, parameters, and request body schema
+- Execute the API call based on the discovered spec
+- Do NOT save the Swagger JSON to a file — fetch fresh each time needed
 
 ## Deploy Flow
 

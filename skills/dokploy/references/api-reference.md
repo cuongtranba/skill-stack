@@ -2,12 +2,15 @@
 
 Based on [Dokploy API Documentation](https://docs.dokploy.com/docs/api).
 
-All requests use `x-api-key` header for authentication. Read values from `.dokploy.json`.
+Authentication: Use `Authorization: Bearer {token}` header (preferred) or `x-api-key` header (fallback). Read values from `.dokploy.json`. See Auth Resolution in SKILL.md.
+
+If an endpoint you need is not listed here, use **Swagger Fetch** to discover it dynamically from the Dokploy instance.
 
 ## Endpoints
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
+| `auth.login` | POST | Login with email/password, returns bearer token |
 | `project.all` | GET | List all projects |
 | `project.create` | POST | Create new project (returns `projectId` + `environmentId`) |
 | `application.create` | POST | Create application (requires `environmentId`) |
@@ -18,6 +21,22 @@ All requests use `x-api-key` header for authentication. Read values from `.dokpl
 | `domain.update` | POST | Update domain config (fix HTTPS) |
 
 ## Request Patterns
+
+### Login
+
+```bash
+curl -s -X POST "{base_url}/api/auth.login" -H "Content-Type: application/json" -d '{"email":"{username}","password":"{password}"}'
+```
+
+Response contains a bearer token. Save to `token` in `.dokploy.json`.
+
+### Swagger (On-Demand Discovery)
+
+```bash
+curl -s "{base_url}/swagger/json" -H "Authorization: Bearer {token}"
+```
+
+Alternative paths if above fails: `/api-json`, `/swagger-json`, `/swagger/doc`. Read response in context to discover endpoints not listed here.
 
 ### List Projects
 

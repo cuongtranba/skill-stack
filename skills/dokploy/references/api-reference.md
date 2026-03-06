@@ -4,23 +4,47 @@ Based on [Dokploy API Documentation](https://docs.dokploy.com/docs/api).
 
 Authentication: Use `Authorization: Bearer {token}` header (preferred) or `x-api-key` header (fallback). Read values from `.dokploy.json`. See Auth Resolution in SKILL.md.
 
-If an endpoint you need is not listed here, use **Swagger Fetch** to discover it dynamically from the Dokploy instance.
+## Dynamic Endpoint Discovery
 
-## Endpoints
+Dokploy exposes its full OpenAPI spec via a tRPC endpoint. **Always use this to discover endpoints** rather than guessing names.
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `auth.login` | POST | Login with email/password, returns bearer token |
-| `project.all` | GET | List all projects |
-| `project.create` | POST | Create new project (returns `projectId` + `environmentId`) |
-| `application.create` | POST | Create application (requires `environmentId`) |
-| `application.update` | POST | Configure source, build type, GitHub repo |
-| `application.one` | GET | Get application details and status |
-| `application.deploy` | POST | Trigger deployment |
-| `domain.create` | POST | Add domain with HTTPS + Let's Encrypt |
-| `domain.update` | POST | Update domain config (fix HTTPS) |
+### Fetch the full spec
 
-## Request Patterns
+```bash
+curl -s "{api_endpoint}/settings.getOpenApiDocument" -H "x-api-key: {api_key}"
+```
+
+Returns an OpenAPI 3.x JSON document with all available endpoints under `paths`.
+
+### Find endpoints for a task
+
+Pipe the spec through a filter to find relevant endpoints:
+
+```bash
+curl -s "{api_endpoint}/settings.getOpenApiDocument" -H "x-api-key: {api_key}" | python3 -c "import json,sys; spec=json.load(sys.stdin); [print(p) for p in sorted(spec.get('paths',{})) if 'KEYWORD' in p.lower()]"
+```
+
+Replace `KEYWORD` with what you're looking for (e.g., `compose`, `docker`, `deploy`, `domain`).
+
+### Get endpoint details (method, params, body schema)
+
+```bash
+curl -s "{api_endpoint}/settings.getOpenApiDocument" -H "x-api-key: {api_key}" | python3 -c "import json,sys; spec=json.load(sys.stdin); print(json.dumps(spec['paths'].get('/ENDPOINT_NAME',{}), indent=2))"
+```
+
+Replace `ENDPOINT_NAME` with the endpoint path (e.g., `compose.one`, `docker.getContainers`).
+
+### Discovery workflow
+
+1. Identify user intent (e.g., "get compose logs")
+2. Fetch spec, search for relevant keywords
+3. Read the matched endpoint's schema (method, required params, request body)
+4. Build and execute the curl call from the schema
+5. If NO endpoint exists for the operation, fall back to SSH (see Golden Rule in SKILL.md)
+
+## Essential Patterns (Quick Reference)
+
+These are the most commonly used patterns. For anything else, use discovery above.
 
 ### Login
 
@@ -29,14 +53,6 @@ curl -s -X POST "{base_url}/api/auth.login" -H "Content-Type: application/json" 
 ```
 
 Response contains a bearer token. Save to `token` in `.dokploy.json`.
-
-### Swagger (On-Demand Discovery)
-
-```bash
-curl -s "{base_url}/swagger/json" -H "Authorization: Bearer {token}"
-```
-
-Alternative paths if above fails: `/api-json`, `/swagger-json`, `/swagger/doc`. Read response in context to discover endpoints not listed here.
 
 ### List Projects
 

@@ -101,7 +101,7 @@ Detect user intent and route:
 | "deployment logs", "debug deployment" | **Debug Flow** |
 | "configure dokploy", "set api key" | **Setup Flow** |
 | "login to dokploy" | **Login Flow** |
-| "refresh api", "check swagger", "api docs" | **Swagger Fetch** |
+| "refresh api", "check swagger", "api docs" | **Endpoint Discovery** |
 
 ## Setup Flow
 
@@ -125,6 +125,12 @@ or with API key:
 curl -s "https://ENDPOINT/api/project.all" -H "x-api-key: API_KEY"
 ```
 
+Also verify the OpenAPI spec endpoint works (used for dynamic endpoint discovery):
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" "https://ENDPOINT/api/settings.getOpenApiDocument" -H "x-api-key: API_KEY"
+```
+
 If valid response → write `.dokploy.json` with the provided values. If error → show the error message and ask user to verify credentials.
 
 Add `.dokploy.json` to `.gitignore` if not already present (it contains secrets).
@@ -141,28 +147,33 @@ curl -s -X POST "{base_url}/api/auth.login" -H "Content-Type: application/json" 
 - **Failure**: Show error message → ask user to re-enter credentials
 - **Auto re-login**: When any API call returns 401 (unauthorized), automatically re-login using stored `username`/`password` without prompting user. If re-login also fails → ask user to update credentials.
 
-## Swagger Fetch (On-Demand)
+## Endpoint Discovery (On-Demand)
 
-When the skill needs an API endpoint not documented in `references/api-reference.md`, fetch the Swagger spec dynamically.
+**NEVER fabricate endpoint names.** Guessing names like `docker.getLogs` or `compose.getServiceLogs` will always return 404.
 
-**When to trigger:**
-- Skill encounters an action it doesn't have a hardcoded endpoint for
+Dokploy exposes its full OpenAPI spec (448+ endpoints) via:
+
+```bash
+curl -s "{api_endpoint}/settings.getOpenApiDocument" -H "x-api-key: {api_key}"
+```
+
+**When to use:**
+- Skill needs an endpoint not in `references/api-reference.md` quick-reference section
 - User requests an operation not covered by existing flows
 - User says "refresh api", "check swagger", or "api docs"
 
-**How to fetch:**
+**Discovery workflow:**
 
-```bash
-curl -s "{base_url}/swagger/json" -H "Authorization: Bearer {token}"
-```
+1. Fetch the spec from `settings.getOpenApiDocument`
+2. Search for keywords matching the user's intent:
+   ```bash
+   curl -s "{api_endpoint}/settings.getOpenApiDocument" -H "x-api-key: {api_key}" | python3 -c "import json,sys; spec=json.load(sys.stdin); [print(p) for p in sorted(spec.get('paths',{})) if 'KEYWORD' in p.lower()]"
+   ```
+3. Read the matched endpoint's schema (method, params, body) from the spec
+4. Build and execute the curl call based on the schema
+5. If NO endpoint exists for the operation → fall back to SSH per the Golden Rule
 
-If that path returns an error, try alternatives: `/api-json`, `/swagger-json`, `/swagger/doc`.
-
-**How to use:**
-- Read the Swagger JSON directly in conversation context
-- Find the relevant endpoint, method, parameters, and request body schema
-- Execute the API call based on the discovered spec
-- Do NOT save the Swagger JSON to a file — fetch fresh each time needed
+**Note:** `/swagger` serves an HTML UI only (no JSON). The paths `/swagger/json`, `/api-json`, `/swagger-json` all return 404. Always use `settings.getOpenApiDocument` for programmatic access.
 
 ## Deploy Flow
 
@@ -273,7 +284,12 @@ Use SSH/server access here to **diagnose**, then fix via API. Never edit server 
    - Latest deployment status and error messages
    - Domain configuration (HTTPS enabled?)
    - Source configuration (correct repo/branch?)
-4. If deeper investigation needed → SSH to read container logs, check nginx config, verify port bindings
+4. **For container logs or unknown operations** — use Endpoint Discovery:
+   a. Fetch spec from `settings.getOpenApiDocument`, search for relevant endpoints
+   b. If an API endpoint exists → use it
+   c. If no API endpoint exists → fall back to SSH:
+      - Find container via `docker.getContainers` or `docker.getContainersByAppNameMatch`
+      - Read logs via SSH: `ssh root@SERVER "docker logs CONTAINER_ID --tail 100"`
 5. Apply any fix through the API (e.g., 526 SSL error → `domain.update` with `https: true` and `certificateType: "letsencrypt"`)
 6. Link to Dokploy dashboard for full logs
 

@@ -285,6 +285,8 @@ Steps execute sequentially by default. Use `parallel:` blocks for concurrent wor
 | `wcag-verify` | WCAG 2.1 A/AA accessibility reviewer for frontend files |
 | `test-quality-verify` | Strict test quality gatekeeper - blocks trivial, shallow, and useless tests |
 | `dev-verify` | Development completion gatekeeper - tests, coverage, lint, and test quality |
+| `golang` | Go best practices enforcer — Uber Go Style Guide, Effective Go, and generics guidelines with `/go:audit`, `/go:fix`, `/go:verify` commands |
+| `dokploy` | Deploy and manage applications on Dokploy — deploy, redeploy, debug, check status, view logs |
 
 ## Configuration (Optional)
 

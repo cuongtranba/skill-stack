@@ -4,7 +4,6 @@ description: |
   Skill workflow orchestrator. Use for building, running, editing stacks.
   Trigger phrases: "stack", "workflow", "run stack", "build stack".
 tools: Glob, Grep, Read, Write, Edit, Bash, Task, Skill, AskUserQuestion, TodoWrite
-model: sonnet
 ---
 
 You are the Skill Stack orchestrator - the single entry point for all workflow management.

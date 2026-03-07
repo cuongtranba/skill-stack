@@ -59,12 +59,15 @@ def execute_step(step):
 
     match step.type:
         case "skill":
+            # Skills run in the current session and automatically
+            # inherit all session context (CLAUDE.md, tools, etc.)
             invoke_skill(step.ref, step.args)
         case "command":
             invoke_command(step.ref)
         case "bash":
             run_bash_with_timeout(step.run, step.timeout)
         case "stack":
+            # Nested stacks inherit all session context from parent
             run_nested_stack(step.ref)
 
     capture_outputs(step.outputs)
@@ -93,12 +96,15 @@ def execute_parallel(block):
     announce(f"Starting parallel block: {block.name}")
     announce(f"Spawning {len(block.branches)} subagents...")
 
+    # Gather session context to pass to subagents
+    session_context = gather_session_context()
+
     # Use Task tool to spawn subagents
     tasks = []
     for branch in block.branches:
         task = spawn_subagent(
             name=branch.name,
-            prompt=f"Execute: {branch}",
+            prompt=build_subagent_prompt(branch, block, session_context),
             run_in_background=True
         )
         tasks.append(task)
@@ -115,9 +121,69 @@ def execute_parallel(block):
     announce(f"Parallel block '{block.name}' complete")
 ```
 
+### Session Context Gathering
+
+Before spawning subagents, gather the main session's context so each subagent inherits it:
+
+```python
+def gather_session_context():
+    """Collect session context that subagents need to inherit."""
+    context = {}
+
+    # 1. Read CLAUDE.md files (project + global)
+    project_claude_md = read_file_if_exists("CLAUDE.md")
+    global_claude_md = read_file_if_exists("~/.claude/CLAUDE.md")
+    context["claude_md"] = {
+        "project": project_claude_md,
+        "global": global_claude_md,
+    }
+
+    # 2. Read project-local skill-stack config
+    local_config = read_file_if_exists(".claude/skill-stack.local.md")
+    context["stack_config"] = local_config
+
+    # 3. Collect available skills (already discovered during stack load)
+    context["available_skills"] = discovered_skills
+
+    # 4. Working directory and git context
+    context["cwd"] = os.getcwd()
+    context["git_branch"] = get_current_branch()
+
+    # 5. Captured outputs from previous steps (workflow state)
+    context["workflow_outputs"] = captured_outputs
+
+    return context
+```
+
 **Subagent prompt template:**
+
 ```
 You are executing a parallel branch of the '[parent-stack-name]' workflow.
+
+## Session Inheritance
+
+You inherit the main session's full context. Follow all instructions below as if you were the main session.
+
+### Project Instructions (CLAUDE.md)
+
+[Insert contents of project CLAUDE.md if it exists]
+
+### Global Instructions (~/.claude/CLAUDE.md)
+
+[Insert contents of global CLAUDE.md if it exists]
+
+### Working Directory
+
+You are working in: [cwd]
+Git branch: [git_branch]
+
+### Available Skills
+
+You have access to the same skills as the main session:
+[For each available skill:]
+- [plugin:skill-name]: [description]
+
+Use the Skill tool to invoke any of these skills when your step requires it.
 
 ## Your Task
 
@@ -141,9 +207,10 @@ Your Branch: [branch-index] of [total-branches]
 ## Success Criteria
 
 1. Complete the step fully according to its type
-2. If type=skill: Invoke the skill and follow its guidance
+2. If type=skill: Invoke the skill using the Skill tool and follow its guidance completely
 3. If type=bash: Execute the command and capture exit code
 4. If type=command: Run the command to completion
+5. Follow ALL instructions from the inherited CLAUDE.md files
 
 ## Reporting
 
@@ -325,9 +392,10 @@ Outputs:
 
 ## Guidelines
 
+- **Session inheritance**: All subagents MUST inherit the main session's CLAUDE.md instructions, available skills, working directory, and git context
 - Show clear progress indicators
 - Use TodoWrite for step tracking
-- Spawn subagents for parallel work
+- Spawn subagents for parallel work with full session context
 - Respect transition modes
 - Capture and pass outputs between steps
 - Handle errors per step configuration

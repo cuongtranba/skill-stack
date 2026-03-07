@@ -1,0 +1,23 @@
+{
+  "skill_name": "golang",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a Go HTTP handler that accepts a JSON body with user registration data (name, email, password), validates the input, stores it in a map, and returns a JSON response. Include the struct definitions and a main function.",
+      "expected_output": "Code should follow all Go best practices: proper error handling with wrapping, interface compliance check, no naked parameters, proper struct tags, guard clauses, proper naming, etc.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/go:audit on this file:\n\n```go\npackage main\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"sync\"\n\t\"net/http\"\n\t\"os\"\n)\n\nvar db = make(map[string]interface{})\nvar lock sync.Mutex\n\ntype user struct {\n\tName string\n\tEmail string\n\tAge int\n}\n\nfunc GetUser(name string) interface{} {\n\tlock.Lock()\n\tdefer lock.Unlock()\n\treturn db[name]\n}\n\nfunc SaveUser(u user) {\n\tlock.Lock()\n\tdb[u.Name] = u\n\tlock.Unlock()\n}\n\nfunc handler(w http.ResponseWriter, r *http.Request) {\n\tvar u user\n\tjson.NewDecoder(r.Body).Decode(&u)\n\tif u.Name == \"\" {\n\t\tpanic(\"name is required\")\n\t}\n\tSaveUser(u)\n\tdata, _ := json.Marshal(u)\n\tw.Write(data)\n}\n\nfunc init() {\n\tfmt.Println(\"server starting...\")\n\tgo func() {\n\t\tfor {\n\t\t\tfmt.Println(\"background task\")\n\t\t}\n\t}()\n}\n\nfunc main() {\n\thttp.HandleFunc(\"/user\", handler)\n\terr := http.ListenAndServe(\":8080\", nil)\n\tif err != nil {\n\t\tfmt.Println(err)\n\t\tos.Exit(1)\n\t}\n}\n```",
+      "expected_output": "Should produce a priority-categorized audit table finding at least: ignored errors (C01), use of interface{}/any (C07), panic in handler (C06), fire-and-forget goroutine (C04), goroutine in init (H13), missing json tags (H08), GetUser naming (M13), import ordering (M01), unnecessary init (H09), and missing defer (H04).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I need a generic cache implementation in Go with TTL support. It should work with any key/value types. Include methods for Get, Set, Delete, and a background cleanup goroutine for expired entries.",
+      "expected_output": "Should use generics appropriately (comparable constraint for keys, any for values), proper goroutine lifecycle management with stop channel, mutex protection, time.Duration for TTL, no interface{}, proper error handling.",
+      "files": []
+    }
+  ]
+}

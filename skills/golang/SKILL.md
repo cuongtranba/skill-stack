@@ -33,7 +33,8 @@ When generating or modifying Go code, proactively apply these patterns. These ar
 - [ ] **Accept interfaces, return structs** — function params should be interfaces when possible, return concrete types
 
 ### Error Handling (apply to every function)
-- [ ] **Wrap errors with context** — `fmt.Errorf("operation %s: %w", name, err)`, never bare `return err`
+- [ ] **Wrap errors with context** — `fmt.Errorf("operation %s: %w", name, err)`, NEVER bare `return err`. Hard rule. After writing any function, grep your own output for `return err` — every match must be wrapped or justified. Wrap with: (a) operation name, (b) identifying key (id, name, iban, row index, etc.), (c) `%w` verb. Bare `return err` discards trace context and breaks debuggability.
+- [ ] **Refactor extraction trap** — when splitting a function (e.g. for cognitive-complexity gate), audit error returns in BOTH new helpers AND new call sites. Extraction frequently introduces 5–10 bare `return err` that all need wrapping.
 - [ ] **Sentinel errors** for expected conditions — `var ErrNotFound = errors.New("not found")` with `Err` prefix
 - [ ] **Error types** for actionable errors — `type ValidationError struct{...}` with `Error` suffix
 - [ ] **Handle once** — either log OR return, never both

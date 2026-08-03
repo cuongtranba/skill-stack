@@ -31,7 +31,7 @@ flowchart LR
 
 ```bash
 # Add marketplace
-/plugin marketplace add git@github.com:anthropics/skill-stack-marketplace.git
+/plugin marketplace add https://github.com/cuongtranba/skill-stack.git
 
 # Install plugin
 /plugin install skill-stack@skill-stack-marketplace

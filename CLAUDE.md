@@ -23,9 +23,44 @@ Skill Stack is a Claude Code plugin that lets users build and run personalized s
 # Plugin structure validation only
 ./tests/validate-structure.sh
 
+# Distribution invariants only (front matter, version sync, skill declarations)
+./tests/validate-distribution.sh
+
 # Prepare test fixtures (discovers resources, generates YAML, installs mocks)
 ./tests/scripts/prepare-fixtures.sh
 ```
+
+## Distribution
+
+The repo ships through two channels and `tests/validate-distribution.sh` enforces
+the invariants both depend on. Run it after touching any SKILL.md front matter,
+`.claude-plugin/*`, `VERSION`, or `release-please-config.json`.
+
+1. **Claude Code plugin** — `.claude-plugin/marketplace.json`; ships commands,
+   agent, and all 8 skills.
+2. **Skills CLI** — [`vercel-labs/skills`](https://github.com/vercel-labs/skills),
+   `npx skills add cuongtranba/skill-stack#<tag>`; ships skills only.
+
+**Invariants:**
+
+- **Front matter must be valid YAML with string `name` + `description`.** The CLI
+  parses it with a real YAML parser and *silently drops* a skill that fails —
+  there is no error the author will see. A description containing `": "` must be
+  single-quoted, or YAML reads it as a nested mapping. This is how `golang` was
+  invisible to the CLI before v1.6.0.
+- **`.claude-plugin/plugin.json` `skills[]` mirrors `skills/*/`**, one `./`-prefixed
+  entry per directory. The CLI uses it to group skills under the plugin name.
+- **Skills that need `/stack` or `/go:*` carry `metadata.internal: true`**, which
+  hides them from CLI discovery (they remain installable when named explicitly, and
+  Claude Code ignores the key). Currently: `stack-build`, `stack-run`,
+  `stack-validate`.
+- **release-please owns every version.** `VERSION` (via `version-file`),
+  `plugin.json` and `marketplace.json` (via `extra-files`) are all written from
+  `.release-please-manifest.json`. Never hand-edit them; a version file that is not
+  listed in `release-please-config.json` will drift, which is exactly what happened
+  to `VERSION`.
+- **Users pin with the release-please tag**: the `#v1.6.0` fragment is a git ref,
+  recorded per-skill in the lockfile and honoured by `npx skills update`.
 
 ## Stack Locations
 

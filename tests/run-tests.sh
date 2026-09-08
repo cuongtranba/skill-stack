@@ -30,7 +30,22 @@ fi
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════"
-echo "TEST 2: Fixture Validation"
+echo "TEST 2: Distribution Validation"
+echo "═══════════════════════════════════════════════════════════════════"
+
+DIST_PASS=0
+if [ -f "$SCRIPT_DIR/validate-distribution.sh" ]; then
+    if "$SCRIPT_DIR/validate-distribution.sh"; then
+        DIST_PASS=1
+    fi
+else
+    echo "⏭️  Skipping (validate-distribution.sh not found)"
+    DIST_PASS=1
+fi
+
+echo ""
+echo "═══════════════════════════════════════════════════════════════════"
+echo "TEST 3: Fixture Validation"
 echo "═══════════════════════════════════════════════════════════════════"
 
 echo "Checking generated fixtures..."
@@ -62,7 +77,7 @@ echo "Fixture Results: $FIXTURE_PASS/$FIXTURE_COUNT passed"
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════"
-echo "TEST 3: Static Invalid Fixtures"
+echo "TEST 4: Static Invalid Fixtures"
 echo "═══════════════════════════════════════════════════════════════════"
 
 if [ -d "$SCRIPT_DIR/fixtures/static" ]; then
@@ -112,7 +127,7 @@ fi
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════"
-echo "TEST 4: Mermaid Diagram Generation (Manual)"
+echo "TEST 5: Mermaid Diagram Generation (Manual)"
 echo "═══════════════════════════════════════════════════════════════════"
 
 echo "Mermaid tests require manual verification."
@@ -160,6 +175,11 @@ echo "════════════════════════�
 echo ""
 echo "  Fixtures:  $FIXTURE_PASS/$FIXTURE_COUNT passed"
 echo "  Invalid:   $INVALID_CORRECT/$INVALID_COUNT defined"
+if [ "$DIST_PASS" -eq 1 ]; then
+    echo "  Distribution: passed"
+else
+    echo "  Distribution: FAILED"
+fi
 echo "  Diagrams:  $DIAGRAM_COUNT fixtures have diagrams"
 echo "  Structure: (run after implementation)"
 echo "  Scenarios: (manual testing required)"
@@ -171,8 +191,8 @@ echo "  3. Install plugin locally"
 echo "  4. Run manual scenarios"
 echo ""
 
-# Exit with success if fixtures pass
-if [ "$FIXTURE_PASS" -eq "$FIXTURE_COUNT" ] && [ "$FIXTURE_COUNT" -gt 0 ]; then
+# Exit with success if fixtures and distribution checks pass
+if [ "$FIXTURE_PASS" -eq "$FIXTURE_COUNT" ] && [ "$FIXTURE_COUNT" -gt 0 ] && [ "$DIST_PASS" -eq 1 ]; then
     echo "✅ All automated tests passed!"
     exit 0
 else

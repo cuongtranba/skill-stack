@@ -1,6 +1,8 @@
 ---
 name: stack-validate
 description: Use when validating stack YAML files - checks schema, references, and offers conversational fixes
+metadata:
+  internal: true
 ---
 
 # Stack Validate Skill

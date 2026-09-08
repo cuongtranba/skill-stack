@@ -1,6 +1,8 @@
 ---
 name: stack-run
 description: Use when executing a skill workflow stack - handles sequential, parallel, loop, and branching execution
+metadata:
+  internal: true
 ---
 
 # Stack Run Skill

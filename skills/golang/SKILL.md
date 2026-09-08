@@ -1,6 +1,6 @@
 ---
 name: golang
-description: Invoke for any Go/Golang programming work. Triggers: mentions of "Go" (the language), "Golang", `.go` file paths (e.g. `parser.go`, `main.go`, `upload.go`), `go.mod`, `go.sum`, `go build`, `go test`, `go vet`, goroutines, channels, structs, interfaces, or Go generics. Also triggers on slash commands starting with `/go:` such as `/go:audit`, `/go:fix`, `/go:fix P0`, `/go:verify`. Covers writing new Go code, debugging Go errors, reviewing or refactoring Go files, writing Go tests, building Go APIs/services, and migrating other languages to Go. Enforces Uber Go Style Guide and idiomatic patterns.
+description: 'Invoke for any Go/Golang programming work. Triggers: mentions of "Go" (the language), "Golang", `.go` file paths (e.g. `parser.go`, `main.go`, `upload.go`), `go.mod`, `go.sum`, `go build`, `go test`, `go vet`, goroutines, channels, structs, interfaces, or Go generics. Also triggers on slash commands starting with `/go:` such as `/go:audit`, `/go:fix`, `/go:fix P0`, `/go:verify`. Covers writing new Go code, debugging Go errors, reviewing or refactoring Go files, writing Go tests, building Go APIs/services, and migrating other languages to Go. Enforces Uber Go Style Guide and idiomatic patterns.'
 ---
 
 # Go Best Practices Skill

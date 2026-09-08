@@ -29,13 +29,56 @@ flowchart LR
 
 ## Installation
 
+### Claude Code plugin (full feature set)
+
+Installs the `/stack` and `/go:*` commands, the `stack` agent, and all skills.
+
 ```bash
 # Add marketplace
-/plugin marketplace add git@github.com:anthropics/skill-stack-marketplace.git
+/plugin marketplace add git@github.com:cuongtranba/skill-stack.git
 
 # Install plugin
 /plugin install skill-stack@skill-stack-marketplace
 ```
+
+### Skills CLI (any agent)
+
+[`vercel-labs/skills`](https://github.com/vercel-labs/skills) installs the standalone
+skills into any of 75+ agents — Claude Code, Cursor, Codex, OpenCode and others.
+
+```bash
+# Pin to a release (recommended)
+npx skills add cuongtranba/skill-stack#v1.6.0
+
+# Just one skill, still pinned
+npx skills add cuongtranba/skill-stack#v1.6.0@golang
+
+# Track the default branch instead
+npx skills add cuongtranba/skill-stack
+```
+
+The `#v1.6.0` fragment is a **git ref**, so it takes the release-please tag
+directly. That ref is recorded per-skill, and `npx skills update` re-resolves each
+skill against its own pinned ref — a pinned install stays on that release until you
+re-pin to a newer tag. Use the tag from
+[Releases](https://github.com/cuongtranba/skill-stack/releases); it always matches
+`VERSION` and the version in `.claude-plugin/plugin.json`.
+
+Five skills are offered: `golang`, `dokploy`, `wcag-verify`, `dev-verify`,
+`test-quality-verify`.
+
+```bash
+npx skills list                            # what's installed
+npx skills update                          # refresh within the pinned refs
+npx skills remove golang                   # uninstall
+```
+
+> The skills CLI installs **skills only**. `/stack`, `/go:audit`, `/go:fix`,
+> `/go:verify` and the `stack` agent are Claude Code plugin features — install the
+> plugin above to get them. For that reason `stack-build`, `stack-run` and
+> `stack-validate` are marked `metadata.internal` and hidden from CLI discovery;
+> they are still installable on demand via
+> `npx skills add cuongtranba/skill-stack#v1.6.0@stack-run`.
 
 ## Quick Start
 
@@ -277,16 +320,19 @@ Steps execute sequentially by default. Use `parallel:` blocks for concurrent wor
 
 ## Skills
 
-| Skill | Description |
-|-------|-------------|
-| `stack-build` | Guided workflow creation through Socratic questions |
-| `stack-run` | Execution engine for running workflows |
-| `stack-validate` | Validates YAML and offers conversational fixes |
-| `wcag-verify` | WCAG 2.1 A/AA accessibility reviewer for frontend files |
-| `test-quality-verify` | Strict test quality gatekeeper - blocks trivial, shallow, and useless tests |
-| `dev-verify` | Development completion gatekeeper - tests, coverage, lint, and test quality |
-| `golang` | Go best practices enforcer — Uber Go Style Guide, Effective Go, and generics guidelines with `/go:audit`, `/go:fix`, `/go:verify` commands |
-| `dokploy` | Deploy and manage applications on Dokploy — deploy, redeploy, debug, check status, view logs |
+"Standalone" skills work in any agent and are the ones offered by
+`npx skills add`. The rest power `/stack` and need the Claude Code plugin.
+
+| Skill | Standalone | Description |
+|-------|:----------:|-------------|
+| `wcag-verify` | ✅ | WCAG 2.1 A/AA accessibility reviewer for frontend files |
+| `test-quality-verify` | ✅ | Strict test quality gatekeeper - blocks trivial, shallow, and useless tests |
+| `dev-verify` | ✅ | Development completion gatekeeper - tests, coverage, lint, and test quality |
+| `golang` | ✅ | Go best practices enforcer — Uber Go Style Guide, Effective Go, and generics guidelines with `/go:audit`, `/go:fix`, `/go:verify` commands |
+| `dokploy` | ✅ | Deploy and manage applications on Dokploy — deploy, redeploy, debug, check status, view logs |
+| `stack-build` | — | Guided workflow creation through Socratic questions |
+| `stack-run` | — | Execution engine for running workflows |
+| `stack-validate` | — | Validates YAML and offers conversational fixes |
 
 ## Configuration (Optional)
 

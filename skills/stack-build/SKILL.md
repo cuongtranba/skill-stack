@@ -1,6 +1,8 @@
 ---
 name: stack-build
 description: Use when creating or editing skill workflow stacks - guides through Socratic discovery to build personalized YAML configs
+metadata:
+  internal: true
 ---
 
 # Stack Build Skill

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.0](https://github.com/cuongtranba/skill-stack/compare/v1.6.0...v1.7.0) (2026-09-08)
+
+
+### Features
+
+* **dist:** support installation via the vercel-labs/skills CLI ([#3](https://github.com/cuongtranba/skill-stack/issues/3)) ([0d071ac](https://github.com/cuongtranba/skill-stack/commit/0d071ac86a9c05c783b6109ca499bd4c27eda2c9))
+
+
+### Bug Fixes
+
+* **golang:** quote description so front matter parses as YAML ([0d071ac](https://github.com/cuongtranba/skill-stack/commit/0d071ac86a9c05c783b6109ca499bd4c27eda2c9))
+* **release:** let release-please own the VERSION file ([0d071ac](https://github.com/cuongtranba/skill-stack/commit/0d071ac86a9c05c783b6109ca499bd4c27eda2c9))
+
 ## [1.6.0](https://github.com/cuongtranba/skill-stack/compare/v1.5.3...v1.6.0) (2026-05-08)
 
 

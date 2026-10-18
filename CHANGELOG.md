@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/cuongtranba/skill-stack/compare/v1.7.0...v1.8.0) (2026-10-18)
+
+
+### Features
+
+* **dokploy:** handle Cloudflare Bot Fight Mode challenges on API calls ([#5](https://github.com/cuongtranba/skill-stack/issues/5)) ([301621f](https://github.com/cuongtranba/skill-stack/commit/301621f054176a6c6009bda37b74fa29daae36f6))
+
 ## [1.7.0](https://github.com/cuongtranba/skill-stack/compare/v1.6.0...v1.7.0) (2026-09-08)
 
 

@@ -4,6 +4,8 @@ Based on [Dokploy API Documentation](https://docs.dokploy.com/docs/api).
 
 Authentication: Use `Authorization: Bearer {token}` header (preferred) or `x-api-key` header (fallback). Read values from `.dokploy.json`. See Auth Resolution in SKILL.md.
 
+Request profile: if `.dokploy.json` has a `request_profile`, append its `curl_flags` to every example below. For `origin-tunnel`, use `http://localhost:{local_port}/api` as `{api_endpoint}`. See Cloudflare Bot Protection in SKILL.md.
+
 ## Dynamic Endpoint Discovery
 
 Dokploy exposes its full OpenAPI spec via a tRPC endpoint. **Always use this to discover endpoints** rather than guessing names.

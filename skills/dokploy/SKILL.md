@@ -37,9 +37,12 @@ Config file: `.dokploy.json` in project root.
   "project_id": null,
   "environment_id": null,
   "application_id": null,
-  "domain_id": null
+  "domain_id": null,
+  "request_profile": null
 }
 ```
+
+`request_profile` is `null` until Cloudflare challenges a request. After that it holds the profile that worked; see **Cloudflare Bot Protection**.
 
 ### Config Resolution
 
@@ -89,6 +92,12 @@ curl -s "https://example.com/api/project.all" -H "Authorization: Bearer ACTUAL_T
 
 **Always read auth credentials from `.dokploy.json` and inline them directly into curl commands. Use token (Bearer) when available, fall back to api_key (x-api-key).**
 
+**If `request_profile` is set, apply it to every curl in this skill**, including the snippets below that do not show it. Inline its `curl_flags` on the same line, and use `http://localhost:{local_port}/api` in place of `api_endpoint` when its `name` is `origin-tunnel`:
+
+```bash
+curl -s "https://example.com/api/project.all" -H "Authorization: Bearer ACTUAL_TOKEN_HERE" -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" -H "Accept: application/json, text/plain, */*" -H "Accept-Language: en-US,en;q=0.9"
+```
+
 ## Action Routing
 
 Detect user intent and route:
@@ -102,6 +111,7 @@ Detect user intent and route:
 | "configure dokploy", "set api key" | **Setup Flow** |
 | "login to dokploy" | **Login Flow** |
 | "refresh api", "check swagger", "api docs" | **Endpoint Discovery** |
+| "cloudflare blocked", "just a moment", "bot fight mode", any API call returning a challenge page | **Cloudflare Bot Protection** |
 
 ## Setup Flow
 
@@ -131,7 +141,7 @@ Also verify the OpenAPI spec endpoint works (used for dynamic endpoint discovery
 curl -s -o /dev/null -w "%{http_code}" "https://ENDPOINT/api/settings.getOpenApiDocument" -H "x-api-key: API_KEY"
 ```
 
-If valid response → write `.dokploy.json` with the provided values. If error → show the error message and ask user to verify credentials.
+If valid response → write `.dokploy.json` with the provided values. If the response is a Cloudflare challenge (HTML instead of JSON, or a `cf-mitigated: challenge` header), the credentials were never checked: run **Cloudflare Bot Protection** before asking the user about credentials. If error → show the error message and ask user to verify credentials.
 
 Add `.dokploy.json` to `.gitignore` if not already present (it contains secrets).
 
@@ -293,10 +303,93 @@ Use SSH/server access here to **diagnose**, then fix via API. Never edit server 
 5. Apply any fix through the API (e.g., 526 SSL error → `domain.update` with `https: true` and `certificateType: "letsencrypt"`)
 6. Link to Dokploy dashboard for full logs
 
+## Cloudflare Bot Protection
+
+When the Dokploy panel sits behind a Cloudflare-proxied hostname with **Bot Fight Mode** on, Cloudflare can challenge the skill's API calls. Bot Fight Mode matches requests against known bot patterns: the User-Agent and other headers (curl sends `curl/8.x`, which is a known bot pattern), the TLS and HTTP fingerprint, and the reputation of the source IP. The challenge is intermittent, so a call that worked a minute ago can fail now. The fix is to change the request profile, not the credentials.
+
+### Detect a challenge
+
+Treat the response as a Cloudflare challenge, not a Dokploy error, when any of these hold:
+
+| Signal | Meaning |
+|--------|---------|
+| `cf-mitigated: challenge` response header | Cloudflare challenged the request. This header is decisive. |
+| Status 403 or 503 with `content-type: text/html` | A Cloudflare block or challenge page. Dokploy's API answers in JSON. |
+| Body contains `Just a moment...`, `Attention Required! \| Cloudflare`, `challenge-platform`, or `cf_chl_` | The challenge page HTML. |
+| `python3` fails with `JSONDecodeError` / `Expecting value` on a piped API call | Usually the HTML challenge page arriving where JSON was expected. Re-run without the pipe to confirm. |
+
+`server: cloudflare` and `cf-ray` appear on every proxied response, so they only show that Cloudflare is in the path. A Dokploy 401 or 403 with a JSON body is an auth problem: follow Auth Resolution instead.
+
+To see the headers, probe on one line:
+
+```bash
+curl -s -o /dev/null -D - "https://ENDPOINT/api/project.all" -H "x-api-key: API_KEY" | grep -iE "^(HTTP/|content-type:|cf-mitigated:|server:)"
+```
+
+### Change the request profile
+
+Walk this ladder from the current `request_profile` downward. Try each rung **once** with the same read-only call (`project.all`), stop at the first one that returns JSON, and save it to `.dokploy.json` as `request_profile` so every later call reuses it.
+
+1. **`default`**: plain curl, no extra flags. This is what `request_profile: null` means.
+2. **`browser`**: send the headers a browser sends. Replace `141` with the current stable Chrome major version, because an outdated browser version is itself a bot signal:
+
+   ```bash
+   curl -s "https://ENDPOINT/api/project.all" -H "x-api-key: API_KEY" -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" -H "Accept: application/json, text/plain, */*" -H "Accept-Language: en-US,en;q=0.9"
+   ```
+
+   Saved as:
+
+   ```json
+   "request_profile": {
+     "name": "browser",
+     "curl_flags": "-A \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36\" -H \"Accept: application/json, text/plain, */*\" -H \"Accept-Language: en-US,en;q=0.9\""
+   }
+   ```
+
+3. **`origin-tunnel`**: skip Cloudflare entirely. If the browser profile is still challenged, Cloudflare is scoring the TLS fingerprint or the IP, which no curl header can change, so do not try more User-Agent variants. Dokploy's panel listens on port 3000 on the server, so tunnel to it over SSH. Ask the user for the SSH target if it is not known, and pick another local port if 3000 is taken:
+
+   ```bash
+   ssh -fN -o ExitOnForwardFailure=yes -L 3000:localhost:3000 root@SERVER
+   ```
+
+   ```bash
+   curl -s "http://localhost:3000/api/project.all" -H "x-api-key: API_KEY"
+   ```
+
+   Saved as:
+
+   ```json
+   "request_profile": {
+     "name": "origin-tunnel",
+     "curl_flags": "",
+     "ssh_target": "root@SERVER",
+     "local_port": 3000
+   }
+   ```
+
+   The tunnel only carries API calls, so the Golden Rule still holds: every change still goes through the Dokploy API. If a call gets `connection refused`, the tunnel has died: start it again. Never call `http://SERVER_IP:3000` over the internet instead, because that sends the API key in plaintext.
+
+4. **Ask the user** with AskUserQuestion when no rung works or the tunnel is not possible. The user owns the Cloudflare zone, so offer the permanent fixes:
+   - **IP Access rule**: in Cloudflare, add an IP Access rule with the *Allow* action for the machine's public IP (find it with `curl -s https://cloudflare.com/cdn-cgi/trace` and read the `ip=` line). Bot Fight Mode does not trigger when an IP Access rule matches first.
+   - **DNS only**: set the Dokploy panel hostname's DNS record to *DNS only* (grey cloud). This removes Cloudflare from the API path, and the panel then needs its own TLS certificate.
+   - **Turn off Bot Fight Mode** for the zone.
+   - **Super Bot Fight Mode** (Pro plan and above): switch to it and add a custom rule that *Skips* Super Bot Fight Mode for the machine's IP.
+
+   Do not suggest a WAF custom rule or Page Rule with *Skip*, *Bypass*, or *Allow* for plain Bot Fight Mode. Bot Fight Mode runs outside the Ruleset Engine, so those actions have no effect on it.
+
+### Rules
+
+- **Never try to solve the challenge.** Do not drive a headless browser through it, copy `cf_clearance` cookies, or use challenge solvers. The cookie is bound to the browser's User-Agent and IP and expires, and the user can fix the cause in their own zone.
+- **Do not retry in a loop.** Each challenged request adds to the IP's bot score. Try one call per rung.
+- **Do not re-login or ask for new credentials on a challenge.** The credentials were never checked, and `auth.login` goes through the same challenge.
+- **Apply the saved profile to every call**, including Login Flow and Endpoint Discovery.
+- **Re-check when the situation changes.** If a saved profile starts getting challenged, continue down the ladder from it. If the user fixes the zone, set `request_profile` back to `null`.
+
 ## Error Handling
 
 - **No config**: Run Setup Flow
 - **No git remote**: Tell user to push to GitHub first
+- **Cloudflare challenge** (HTML body, `cf-mitigated: challenge`, or a JSON parse error on an API call): Run **Cloudflare Bot Protection**. Do not treat it as an auth failure.
 - **API errors**: Show error message from Dokploy response
 - **App name taken**: Suggest suffix like `-2` or ask for new name
 - **526 SSL error**: Auto-fix domain with `domain.update`

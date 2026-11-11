@@ -27,7 +27,7 @@ description: Use when (1) finishing implementation work, (2) before committing c
 
 ## Verification Checklist
 
-**ALL checks must pass. No exceptions.**
+**All checks must pass.**
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -98,10 +98,10 @@ description: Use when (1) finishing implementation work, (2) before committing c
 
 SCOPE: 5 files changed (3 source, 2 tests)
 
-[1/5] Tests .......................... PASS (47 tests)
-[2/5] Coverage Delta ................. PASS (new code: 94%)
-[3/5] Lint ........................... PASS (0 errors)
-[4/5] Test Quality ................... PASS (2 tests valid)
+[1/4] Tests .......................... PASS (47 tests)
+[2/4] Coverage Delta ................. PASS (new code: 94%)
+[3/4] Lint ........................... PASS (0 errors)
+[4/4] Test Quality ................... PASS (2 tests valid)
 
 ════════════════════════════════════════
 VERIFICATION PASSED - Ready to commit
@@ -115,15 +115,15 @@ VERIFICATION PASSED - Ready to commit
 
 SCOPE: 5 files changed (3 source, 2 tests)
 
-[1/5] Tests .......................... FAIL
+[1/4] Tests .......................... FAIL
       ├─ src/api/user.test.ts:45 - expected 200, got 404
       └─ src/api/user.test.ts:67 - timeout
 
-[2/5] Coverage Delta ................. BLOCKED
-[3/5] Lint ........................... FAIL
+[2/4] Coverage Delta ................. BLOCKED
+[3/4] Lint ........................... FAIL
       └─ src/api/user.ts:23 - use 'const' instead
 
-[4/5] Test Quality ................... BLOCKED
+[4/4] Test Quality ................... BLOCKED
 
 ════════════════════════════════════════
 VERIFICATION FAILED - 2 checks failed
@@ -143,10 +143,10 @@ After tests pass, invoke `test-quality-verify` on:
 - New test files (via git diff)
 - Modified test files
 
-**No Bypass:** Weak tests = verification fails.
+Weak tests = verification fails.
 
 ```
-[4/5] Test Quality ................... FAIL
+[4/4] Test Quality ................... FAIL
 
       Test: "should return user"
       Verdict: REJECT
@@ -172,4 +172,4 @@ After tests pass, invoke `test-quality-verify` on:
 3. Require fixes
 4. No proceeding until PASS
 
-Cannot bypass. Cannot override. Fix the issues.
+Stop, report every issue found so far, and do not report the work as done or commit until all checks pass.

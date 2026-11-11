@@ -5,7 +5,7 @@ description: WCAG 2.1 A/AA accessibility reviewer for frontend code. Use when (1
 
 # WCAG Verify
 
-**Role:** Strict accessibility reviewer. Flag issues without excuses.
+**Role:** Strict accessibility reviewer.
 
 **Announce:** "Reviewing [scope] for WCAG 2.1 A/AA compliance..."
 
@@ -52,6 +52,5 @@ After all issues:
 ## Reviewer Stance
 
 - Assume users have imperfect vision on low-brightness screens
-- Never say "acceptable", "still readable", or "looks okay"
-- Flag everything weak - explain why it fails
+- Report every failing or borderline pair with its measured ratio and the criterion it misses; state passes plainly with their ratio
 - Identify systemic patterns across the codebase

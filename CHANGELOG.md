@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/cuongtranba/skill-stack/compare/v1.8.0...v1.8.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **skills:** resolve prompt-audit findings in five skills ([#7](https://github.com/cuongtranba/skill-stack/issues/7)) ([8a1dbf4](https://github.com/cuongtranba/skill-stack/commit/8a1dbf48f430d26aaf6e7409b40c33feb15043d4))
+
 ## [1.8.0](https://github.com/cuongtranba/skill-stack/compare/v1.7.0...v1.8.0) (2026-10-18)
 
 

@@ -59,14 +59,11 @@ When making any API call, resolve authentication in this order:
 3. No `username`/`password` → fallback to `api_key` with `x-api-key` header
 4. No credentials at all → run **Setup Flow**
 
-## Bash Tool Constraints — CRITICAL
+## Bash tool constraints
 
-The Bash tool breaks curl in two ways. Both cause `curl: option : blank argument where content is expected`.
+Shell variables do not persist between Bash tool calls, so a variable set in an earlier call expands to empty in the curl that uses it. Backslash line continuations (`\`) in a curl command break in the same way. Both produce `curl: option : blank argument where content is expected`.
 
-- **NEVER** use shell variables for API key or endpoint values
-- **NEVER** use backslash line continuations (`\`) in curl commands
-
-**The ONLY correct pattern — everything on ONE line, values inlined:**
+So inline the endpoint and credential values directly into each curl command instead of using shell variables, and keep the whole curl command on a single line with no `\` continuations:
 
 With token auth:
 
@@ -189,7 +186,7 @@ curl -s "{api_endpoint}/settings.getOpenApiDocument" -H "x-api-key: {api_key}"
 
 ### Step 1: Load Config
 
-Read `.dokploy.json`. If missing or no `api_key` → run Setup Flow first.
+Read `.dokploy.json`. If it is missing or holds no usable credentials (see Auth Resolution), run Setup Flow first.
 
 ### Step 2: Validate Prerequisites
 
@@ -218,6 +215,8 @@ Check for `Dockerfile` and `nginx.conf` in project root. If missing, generate th
 See [references/dockerfile-templates.md](references/dockerfile-templates.md) for templates.
 
 ### Step 5: Create Project
+
+Snippets below show `x-api-key`; use the header Auth Resolution selects.
 
 ```bash
 curl -s -X POST "{api_endpoint}/project.create" -H "Content-Type: application/json" -H "x-api-key: {api_key}" -d '{"name":"{app_name}","description":"Deployed via Claude skill"}'

@@ -15,14 +15,6 @@ Enforce idiomatic Go patterns from Uber Go Style Guide, Effective Go, and Go gen
 | `/go:fix` | Auto-fix detected issues from the last audit |
 | `/go:verify` | Verify code passes all checks after changes |
 
-## Triggering
-
-This skill activates when:
-- Working with `.go` files or `go.mod`/`go.sum`
-- Generating, reviewing, or modifying Go code
-- Running Go commands (`go build`, `go test`, `go vet`)
-- User invokes `/go:audit`, `/go:fix`, or `/go:verify`
-
 ## Code Generation Checklist
 
 When generating or modifying Go code, proactively apply these patterns. These are the things that separate production-grade Go from "works but not idiomatic" Go. Apply them automatically — don't wait for an audit to catch them.
@@ -335,6 +327,8 @@ func (h *UserHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 ## Concurrency Patterns
 
+The closures below capture the loop variable directly (Go ≥1.22 loop-variable semantics; use `wg.Go` on Go ≥1.25).
+
 ```go
 // Worker pool (preferred over unbounded goroutines)
 func process(items []Item) {
@@ -343,11 +337,11 @@ func process(items []Item) {
     for _, item := range items {
         wg.Add(1)
         sem <- struct{}{}
-        go func(it Item) {
+        go func() {
             defer wg.Done()
             defer func() { <-sem }()
-            handle(it)
-        }(item)
+            handle(item)
+        }()
     }
     wg.Wait()
 }
@@ -358,10 +352,10 @@ func fetch(urls []string) []Result {
     var wg sync.WaitGroup
     for _, url := range urls {
         wg.Add(1)
-        go func(u string) {
+        go func() {
             defer wg.Done()
-            results <- doFetch(u)
-        }(url)
+            results <- doFetch(url)
+        }()
     }
     go func() {
         wg.Wait()

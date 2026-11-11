@@ -122,7 +122,7 @@ test('createUser generates unique ID for each call', () => {
 ### Python (pytest)
 
 ```python
-# REJECT: Smoke-only, happy path only
+# REJECT: Single happy-path value (a hard-coded `return 5` passes it)
 def test_divide():
     assert divide(10, 2) == 5  # Would pass with return 5
 
@@ -151,6 +151,9 @@ func TestCache_GetAfterSet(t *testing.T) {
     c.Set("key", "value")
     got := c.Get("key")
     if got != "value" { t.Fatalf("got %q, want %q", got, "value") }
+    c.Set("other", "second")
+    got = c.Get("other")
+    if got != "second" { t.Fatalf("got %q, want %q", got, "second") }
 }
 ```
 
@@ -167,7 +170,7 @@ func TestCache_GetAfterSet(t *testing.T) {
 
 ## Reviewer Stance
 
-- Never say "this test is fine" or "good enough"
+- Give every verdict a specific reason; a PASS names the bug the test catches.
 - Assume every untested path will have a bug
 - If you can't explain what bug it catches → reject it
 - Coverage numbers mean nothing; only bug-catching ability matters

@@ -1,11 +1,11 @@
 ---
 name: dokploy
-description: Deploy and manage applications on Dokploy. Use when user wants to deploy, redeploy, debug deployments, check status, view logs, or configure Dokploy settings. Triggers on "deploy", "redeploy", "dokploy", "push to production", "publish app", "deployment status", "deployment logs".
+description: Install Dokploy securely on a fresh server, and deploy and manage applications on Dokploy. Use when user wants to install or set up a Dokploy server, deploy, redeploy, debug deployments, check status, view logs, or configure Dokploy settings. Triggers on "install dokploy", "new dokploy server", "setup dokploy server", "deploy", "redeploy", "dokploy", "push to production", "publish app", "deployment status", "deployment logs".
 ---
 
 # Dokploy Deployment Skill
 
-Manage application deployments on a self-hosted Dokploy instance.
+Install a self-hosted Dokploy instance and manage application deployments on it.
 
 ## Golden Rule: API for Changes, SSH for Verification
 
@@ -20,6 +20,8 @@ Why this matters: API changes are tracked, reversible, and consistent with Dokpl
 - Triggering deploys → API call (`application.deploy`)
 - Checking why a deploy failed → SSH to read logs, then fix via API
 - "The SSL cert isn't working" → `domain.update` via API, not editing nginx on the server
+
+The **Install Flow** is the exception: it runs before Dokploy exists, so it sets up the host (firewall, Docker, SSH) over SSH. Once Dokploy is running, Dokploy state goes back through the API.
 
 ## Configuration
 
@@ -101,6 +103,7 @@ Detect user intent and route:
 
 | User says | Action |
 |-----------|--------|
+| "install dokploy", "new dokploy server", "setup dokploy server" | **Install Flow** |
 | "deploy", "deploy to dokploy", "push to production" | **Deploy Flow** |
 | "redeploy", "redeploy {name}" | **Redeploy Flow** |
 | "deployment status", "check deploy" | **Status Flow** |
@@ -109,6 +112,28 @@ Detect user intent and route:
 | "login to dokploy" | **Login Flow** |
 | "refresh api", "check swagger", "api docs" | **Endpoint Discovery** |
 | "cloudflare blocked", "just a moment", "bot fight mode", any API call returning a challenge page | **Cloudflare Bot Protection** |
+
+## Install Flow
+
+Install Dokploy on a fresh server without exposing it. The official installer publishes the panel on public port `:3000` with open first-user registration, and the first account to register becomes the owner, with root on the server through the panel. Bots scan for fresh installs and have taken servers over about 3 minutes after the installer finished. So the order below is the point: at no step is `:3000` or the registration page reachable from the internet.
+
+The commands, the firewall script, and the verification checklist are in [references/server-install.md](references/server-install.md). Follow its steps in order:
+
+0. **Preflight**: confirm key login plus `sudo` work, and stamp the install start for the audit.
+1. **Firewall before Docker or Dokploy exists**, with [references/dokploy-firewall.sh](references/dokploy-firewall.sh): public interface allows SSH, ICMP, and established traffic; 80/443 only from Cloudflare's ranges; everything else is dropped, including `:3000` and Swarm (2377, 7946, 4789). It covers IPv4 and IPv6, and `DOCKER-USER` as well as `INPUT`, because Docker-published ports bypass `INPUT` and `ufw`. Arm the auto-revert timer before applying, and cancel it only after a fresh SSH login works.
+2. **Install** with `ADVERTISE_ADDR=<public ip>`, then probe `IP:3000`, `IP:80`, and `IP:443` from outside: all must time out.
+3. **Register the owner over an SSH tunnel** (`ssh -L 3000:localhost:3000`, then `http://localhost:3000`), then check the database holds exactly one user, with the user's email.
+4. **Panel domain**: proxied Cloudflare record, SSL/TLS mode **Full (strict)**, `settings.assignDomainServer` with Let's Encrypt.
+5. **App domains**: `https: true` and `certificateType: "letsencrypt"` on every domain (Deploy Flow Step 8).
+6. **SSH hardening**: key-only, `PermitRootLogin no`, behind its own auto-revert timer.
+7. **Post-install audit**, then report the verification checklist line by line.
+
+Rules:
+
+- **Do not run the installer on a server whose firewall is not yet applied**, and do not register an account through `http://PUBLIC_IP:3000`. Either one leaves the owner seat open to the internet.
+- **If any probe in Step 2 gets an HTTP response, stop before Step 3.** Fix the firewall first; registration waits until `:3000` is closed.
+- **If the owner check finds an account the user did not create, stop.** Do not delete it or clean up in place: the server is compromised (see **Compromise indicators**).
+- **The user registers and types the password.** The agent opens the tunnel and checks the result.
 
 ## Setup Flow
 
@@ -246,7 +271,7 @@ curl -s -X POST "{api_endpoint}/application.update" -H "Content-Type: applicatio
 curl -s -X POST "{api_endpoint}/domain.create" -H "Content-Type: application/json" -H "x-api-key: {api_key}" -d '{"applicationId":"{application_id}","host":"{app_name}.{domain_base}","https":true,"certificateType":"letsencrypt","port":80}'
 ```
 
-**CRITICAL:** Always set `https: true`, `certificateType: "letsencrypt"`, `port: 80`. Without these → 526 SSL error with Cloudflare.
+Always set `https: true`, `certificateType: "letsencrypt"`, `port: 80`, on every domain. With Cloudflare in Full (strict) mode, the server must present a valid certificate, so a domain without HTTPS answers 526 or 404.
 
 Save `domainId` to config. If domain exists without HTTPS, fix with `domain.update`. See [references/api-reference.md](references/api-reference.md).
 
@@ -301,6 +326,23 @@ Use SSH/server access here to **diagnose**, then fix via API. Never edit server 
       - Read logs via SSH: `ssh root@SERVER "docker logs CONTAINER_ID --tail 100"`
 5. Apply any fix through the API (e.g., 526 SSL error → `domain.update` with `https: true` and `certificateType: "letsencrypt"`)
 6. Link to Dokploy dashboard for full logs
+
+### Compromise indicators
+
+A Dokploy panel that was reachable on `:3000` before anyone registered may have been taken over. A hijack seen in practice registered an owner about 2.5 minutes after install, then used the panel to add an SSH key and install systemd units as root. Check for these when debugging an unfamiliar instance, when the user reports a login page they never registered on, or when the server is slow for no clear reason. The audit commands are in Step 7 of [references/server-install.md](references/server-install.md).
+
+| Where | Indicator |
+|-------|-----------|
+| Dokploy database | A `user` the user did not create, especially with `member.role = owner`; sessions from unfamiliar IPs; a project the user did not create |
+| `authorized_keys` (root and every home directory) | A key the user does not recognise. The observed one had the comment `dokploy` and was added to both `root` and the sudo user |
+| systemd | Units with `Restart=always` that the user did not install. Observed: `docker-daemon.service` (downloads the `HashVault/vltrig` XMRig fork to `/bin/docker-daemon`) and `orchestrator-lab.service` (runs `~/.orch-lab/orchestrator -hunt -dokploy-only`, a worm that hunts more fresh Dokploy installs) |
+| Processes | A miner (`xmrig`, `vltrig`, or a name imitating Docker, such as `docker-daemon`) using several cores; outbound connections to mining pools |
+
+When any indicator holds, stop and tell the user. The attacker had root, so removing what you can see does not make the server trustworthy, and cleanup is not a fix. Recommend:
+
+1. Take the server off the network, or snapshot it if the user wants evidence.
+2. Reinstall the OS, then follow the **Install Flow**.
+3. Rotate every secret the panel held or the server could read: Dokploy API keys, Git provider tokens, registry credentials, environment variables of deployed apps, and SSH keys used from the server.
 
 ## Cloudflare Bot Protection
 
@@ -393,8 +435,11 @@ Walk this ladder from the current `request_profile` downward. Try each rung **on
 - **App name taken**: Suggest suffix like `-2` or ask for new name
 - **526 SSL error**: Auto-fix domain with `domain.update`
 - **Deploy failure**: Check `application.one`, link to dashboard for logs
+- **Unknown Dokploy account, or a login page on an instance the user never registered**: Check **Compromise indicators**. Do not log in or clean up.
 
 ## References
 
 - [API Reference](references/api-reference.md) — All Dokploy API endpoints and curl patterns
 - [Dockerfile Templates](references/dockerfile-templates.md) — Dockerfile, nginx.conf, .dockerignore templates
+- [Server Install & Hardening](references/server-install.md) — Install Flow commands, audit, and verification checklist
+- [dokploy-firewall.sh](references/dokploy-firewall.sh) — Host firewall for IPv4, IPv6, and `DOCKER-USER`, with systemd units

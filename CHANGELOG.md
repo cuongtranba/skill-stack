@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/cuongtranba/skill-stack/compare/v1.8.1...v1.9.0) (2026-11-23)
+
+
+### Features
+
+* **dokploy:** add secure server Install Flow and host firewall ([#10](https://github.com/cuongtranba/skill-stack/issues/10)) ([e642457](https://github.com/cuongtranba/skill-stack/commit/e642457e3f5f807ef3a8e5763ea982c3a821fa9b)), closes [#9](https://github.com/cuongtranba/skill-stack/issues/9)
+
 ## [1.8.1](https://github.com/cuongtranba/skill-stack/compare/v1.8.0...v1.8.1) (2026-11-11)
 
 
